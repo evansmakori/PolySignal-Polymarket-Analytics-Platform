@@ -189,45 +189,49 @@ async def close_pool() -> None:
 # ---------------------------------------------------------------------------
 async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        # Set search_path explicitly for this connection
-        await conn.execute("SET search_path TO public")
+    # Step 1: Grant permissions using a dedicated connection (committed immediately)
+    try:
+        conn1 = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        try:
+            await conn1.execute("SET search_path TO public")
+            await conn1.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
+            await conn1.execute("GRANT CREATE ON SCHEMA public TO CURRENT_USER")
+            print("✓ Schema permissions granted")
+        except Exception as e:
+            print(f"⚠ Schema grant warning: {e}")
+        finally:
+            await conn1.close()
+    except Exception as e:
+        print(f"⚠ Could not open grant connection: {e}")
 
-        # Try to fix schema permissions — works on DO dev DBs where
-        # the injected user is the schema owner
-        for grant_sql in [
-            "GRANT ALL ON SCHEMA public TO CURRENT_USER",
-            "GRANT CREATE ON SCHEMA public TO CURRENT_USER",
-            "ALTER SCHEMA public OWNER TO CURRENT_USER",
-        ]:
-            try:
-                await conn.execute(grant_sql)
-                print(f"✓ {grant_sql}")
-            except Exception as e:
-                print(f"⚠ Skipped: {grant_sql} ({e})")
-
-        # Create each table individually so one failure doesn't block others
-        for ddl_name, ddl in [
-            ("orderbook", DDL_ORDERBOOK),
-            ("history", DDL_HISTORY),
-            ("trades", DDL_TRADES),
-            ("stats", DDL_STATS),
-        ]:
-            try:
-                await conn.execute(ddl)
-                print(f"✓ Table {ddl_name} ready")
-            except Exception as e:
-                print(f"⚠ Table {ddl_name} failed: {e}")
-
-        # Create indexes individually
-        for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
-            stmt = stmt.strip()
-            if stmt:
+    # Step 2: Create tables using a fresh connection (sees committed grants)
+    try:
+        conn2 = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        try:
+            await conn2.execute("SET search_path TO public")
+            for ddl_name, ddl in [
+                ("orderbook", DDL_ORDERBOOK),
+                ("history", DDL_HISTORY),
+                ("trades", DDL_TRADES),
+                ("stats", DDL_STATS),
+            ]:
                 try:
-                    await conn.execute(stmt)
-                except Exception:
-                    pass
+                    await conn2.execute(ddl)
+                    print(f"✓ Table {ddl_name} ready")
+                except Exception as e:
+                    print(f"⚠ Table {ddl_name} failed: {e}")
+
+            for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
+                stmt = stmt.strip()
+                if stmt:
+                    try:
+                        await conn2.execute(stmt)
+                    except Exception:
+                        pass
+        finally:
+            await conn2.close()
+    except Exception as e:
+        print(f"⚠ Could not create tables: {e}")
 
 
 # ---------------------------------------------------------------------------
