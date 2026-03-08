@@ -191,28 +191,43 @@ async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
     pool = await get_pool()
     async with pool.acquire() as conn:
-        # Try to grant permissions on public schema (may fail on managed DBs)
+        # Set search_path explicitly for this connection
+        await conn.execute("SET search_path TO public")
+
+        # Try to fix schema permissions — works on DO dev DBs where
+        # the injected user is the schema owner
         for grant_sql in [
             "GRANT ALL ON SCHEMA public TO CURRENT_USER",
             "GRANT CREATE ON SCHEMA public TO CURRENT_USER",
+            "ALTER SCHEMA public OWNER TO CURRENT_USER",
         ]:
             try:
                 await conn.execute(grant_sql)
-            except Exception:
-                pass
+                print(f"✓ {grant_sql}")
+            except Exception as e:
+                print(f"⚠ Skipped: {grant_sql} ({e})")
 
-        async with conn.transaction():
-            await conn.execute(DDL_ORDERBOOK)
-            await conn.execute(DDL_HISTORY)
-            await conn.execute(DDL_TRADES)
-            await conn.execute(DDL_STATS)
-            for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
-                stmt = stmt.strip()
-                if stmt:
-                    try:
-                        await conn.execute(stmt)
-                    except Exception:
-                        pass
+        # Create each table individually so one failure doesn't block others
+        for ddl_name, ddl in [
+            ("orderbook", DDL_ORDERBOOK),
+            ("history", DDL_HISTORY),
+            ("trades", DDL_TRADES),
+            ("stats", DDL_STATS),
+        ]:
+            try:
+                await conn.execute(ddl)
+                print(f"✓ Table {ddl_name} ready")
+            except Exception as e:
+                print(f"⚠ Table {ddl_name} failed: {e}")
+
+        # Create indexes individually
+        for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
+            stmt = stmt.strip()
+            if stmt:
+                try:
+                    await conn.execute(stmt)
+                except Exception:
+                    pass
 
 
 # ---------------------------------------------------------------------------
