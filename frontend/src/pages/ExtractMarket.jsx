@@ -158,10 +158,18 @@ function ExtractMarket() {
           )}
 
           {searchResults.isError && (
-            <div className="card bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-              <p className="text-red-800 dark:text-red-300">
-                Error searching markets: {searchResults.error.message}
-              </p>
+            <div className="card bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-start space-x-3">
+                <span className="text-2xl">🔌</span>
+                <div>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                    Unable to search markets right now
+                  </h3>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                    The search service is temporarily unavailable. Please try again in a few seconds, or paste a Polymarket URL directly using the "Paste URL" tab.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -434,10 +442,28 @@ function ExtractMarket() {
                 <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-                    Extraction failed
+                    {(() => {
+                      const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
+                      if (detail.toLowerCase().includes('no markets found')) return '🏁 Market Not Found'
+                      if (detail.toLowerCase().includes('network') || detail.toLowerCase().includes('econnrefused')) return '🔌 Connection Error'
+                      if (detail.toLowerCase().includes('resolved') || detail.toLowerCase().includes('closed')) return '🏁 Market Already Resolved'
+                      return '⚠️ Extraction Failed'
+                    })()}
                   </h3>
                   <p className="text-sm text-red-800 dark:text-red-300">
-                    {mutation.error.response?.data?.detail || mutation.error.message}
+                    {(() => {
+                      const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
+                      if (detail.toLowerCase().includes('no markets found'))
+                        return 'No active markets were found at this URL. The event may have ended, been resolved, or the URL may be incorrect.'
+                      if (detail.toLowerCase().includes('network') || !mutation.error.response)
+                        return 'Unable to reach the server. Please check your connection and try again in a few seconds.'
+                      if (detail.toLowerCase().includes('resolved') || detail.toLowerCase().includes('closed'))
+                        return 'This market is no longer active. The event has already ended or been resolved, so results can\'t be extracted anymore.'
+                      return detail || 'Something went wrong. Please try again with a different URL.'
+                    })()}
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                    💡 Try an active market at <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="underline">polymarket.com</a>
                   </p>
                 </div>
               </div>
