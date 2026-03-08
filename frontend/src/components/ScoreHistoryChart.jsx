@@ -52,9 +52,15 @@ function ScoreHistoryChart({ marketId }) {
     return 'text-gray-600 dark:text-gray-400'
   }
 
-  // Simple ASCII-style chart
-  const maxScore = Math.max(...history.map(h => h.score), 100)
-  const minScore = Math.min(...history.map(h => h.score), 0)
+  // Simple ASCII-style chart — filter out items with null/undefined scores
+  const validHistory = history.filter(h => h.score != null)
+  if (validHistory.length === 0) return (
+    <div className="card">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">No score data available</div>
+    </div>
+  )
+  const maxScore = Math.max(...validHistory.map(h => h.score), 100)
+  const minScore = Math.min(...validHistory.map(h => h.score), 0)
   const scoreRange = maxScore - minScore || 1
 
   return (
@@ -140,9 +146,9 @@ function ScoreHistoryChart({ marketId }) {
                   stroke="currentColor"
                   strokeWidth="2"
                   className="text-primary-600"
-                  points={history
+                  points={validHistory
                     .map((point, i) => {
-                      const x = (i / (history.length - 1)) * 100
+                      const x = (i / (validHistory.length - 1)) * 100
                       const y = 100 - ((point.score - minScore) / scoreRange) * 100
                       return `${x},${y}`
                     })
@@ -155,8 +161,8 @@ function ScoreHistoryChart({ marketId }) {
                   fill="currentColor"
                   className="text-primary-600 opacity-10"
                   points={[
-                    ...history.map((point, i) => {
-                      const x = (i / (history.length - 1)) * 100
+                    ...validHistory.map((point, i) => {
+                      const x = (i / (validHistory.length - 1)) * 100
                       const y = 100 - ((point.score - minScore) / scoreRange) * 100
                       return `${x},${y}`
                     }),
@@ -167,8 +173,8 @@ function ScoreHistoryChart({ marketId }) {
               </svg>
 
               {/* Data points */}
-              {history.map((point, i) => {
-                const x = (i / (history.length - 1)) * 100
+              {validHistory.map((point, i) => {
+                const x = (i / (validHistory.length - 1)) * 100
                 const y = 100 - ((point.score - minScore) / scoreRange) * 100
                 return (
                   <div
@@ -185,8 +191,8 @@ function ScoreHistoryChart({ marketId }) {
 
         {/* X-axis labels */}
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 ml-12">
-          <span>{new Date(history[0].timestamp).toLocaleDateString()}</span>
-          <span>{new Date(history[history.length - 1].timestamp).toLocaleDateString()}</span>
+          <span>{new Date(validHistory[0].timestamp).toLocaleDateString()}</span>
+          <span>{new Date(validHistory[validHistory.length - 1].timestamp).toLocaleDateString()}</span>
         </div>
       </div>
 
@@ -196,19 +202,19 @@ function ScoreHistoryChart({ marketId }) {
           <div>
             <div className="text-gray-500 dark:text-gray-400 mb-1">Highest</div>
             <div className="font-semibold text-gray-900 dark:text-white">
-              {Math.max(...history.map(h => h.score)).toFixed(1)}
+              {Math.max(...validHistory.map(h => h.score)).toFixed(1)}
             </div>
           </div>
           <div>
             <div className="text-gray-500 dark:text-gray-400 mb-1">Average</div>
             <div className="font-semibold text-gray-900 dark:text-white">
-              {(history.reduce((sum, h) => sum + h.score, 0) / history.length).toFixed(1)}
+              {(validHistory.reduce((sum, h) => sum + h.score, 0) / validHistory.length).toFixed(1)}
             </div>
           </div>
           <div>
             <div className="text-gray-500 dark:text-gray-400 mb-1">Lowest</div>
             <div className="font-semibold text-gray-900 dark:text-white">
-              {Math.min(...history.map(h => h.score)).toFixed(1)}
+              {Math.min(...validHistory.map(h => h.score)).toFixed(1)}
             </div>
           </div>
         </div>

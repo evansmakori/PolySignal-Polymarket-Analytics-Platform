@@ -2,6 +2,7 @@ import { Activity, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import { formatLargeNumber, formatPercent, getRiskColor } from '../utils/formatters'
 
 function StatsGrid({ market }) {
+  if (!market) return null
   const stats = [
     {
       label: 'Volume',

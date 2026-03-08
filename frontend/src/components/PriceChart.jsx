@@ -30,7 +30,7 @@ function PriceChart({ data, title = 'Price History' }) {
       // Find previous point for change calculation
       const currentIndex = chartData.findIndex(d => d.time === label)
       const previousPoint = currentIndex > 0 ? chartData[currentIndex - 1] : null
-      const priceChange = previousPoint ? ((price - previousPoint.price) / previousPoint.price) * 100 : null
+      const priceChange = previousPoint && previousPoint.price !== 0 ? ((price - previousPoint.price) / previousPoint.price) * 100 : null
 
       return (
         <div className="bg-white dark:bg-gray-800 border-2 border-primary-500 dark:border-primary-400 rounded-lg shadow-xl p-4 min-w-[200px]">

@@ -109,6 +109,16 @@ function MarketDetail() {
   }
 
   return (
+    <ErrorBoundary fallback={
+      <div className="card bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-center py-12">
+        <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">⚠️ Something went wrong</h3>
+        <p className="text-sm text-red-700 dark:text-red-300 mb-4">This market page couldn't be displayed. The data may be incomplete or in an unexpected format.</p>
+        <Link to="/" className="inline-flex items-center text-primary-600 hover:text-primary-700">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Link>
+      </div>
+    }>
     <div className="space-y-6">
       {/* Back Button */}
       <Link to="/" className="inline-flex items-center text-primary-600 hover:text-primary-700">
@@ -142,7 +152,7 @@ function MarketDetail() {
 
           {/* Timestamps */}
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            Last updated: {formatDateTime(displayData.snapshot_ts)}
+            Last updated: {displayData.snapshot_ts ? formatDateTime(displayData.snapshot_ts) : 'N/A'}
           </div>
         </div>
       </div>
@@ -159,8 +169,8 @@ function MarketDetail() {
           {/* Probability Gauge */}
           <ErrorBoundary label="Probability Gauge">
             <ProbabilityGauge 
-              probability={displayData.ui_yes_price || displayData.yes_price || 0.5}
-              previousProbability={history && history.length > 1 ? history[history.length - 2].price : null}
+              probability={displayData.ui_yes_price ?? displayData.yes_price ?? 0.5}
+              previousProbability={history && history.length > 1 ? (history[history.length - 2]?.price ?? null) : null}
             />
           </ErrorBoundary>
 
@@ -286,6 +296,7 @@ function MarketDetail() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   )
 }
 
