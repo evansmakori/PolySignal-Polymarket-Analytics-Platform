@@ -5,9 +5,7 @@ databases:
   - name: polymarket-db
     engine: PG
     version: "16"
-    production: true
-    cluster_name: polymarket-db
-    size: db-s-1vcpu-2gb
+    production: false
 
 ingress:
   rules:
