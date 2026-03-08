@@ -207,33 +207,10 @@ async def close_pool() -> None:
 async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
     try:
-        # Step 1: Grant permissions in one connection and close it
-        conn1 = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        conn = await asyncpg.connect(dsn=settings.DATABASE_URL)
         try:
-            current_user = await conn1.fetchval("SELECT current_user")
+            current_user = await conn.fetchval("SELECT current_user")
             print(f"✓ Connected as: {current_user}")
-            # Try setting role to pg_database_owner (user may be a member)
-            try:
-                await conn1.execute("SET ROLE pg_database_owner")
-                await conn1.execute(f'GRANT ALL ON SCHEMA public TO "{current_user}"')
-                await conn1.execute("RESET ROLE")
-                print("✓ Granted via pg_database_owner role")
-            except Exception as e1:
-                print(f"⚠ Role grant failed: {e1}")
-                try:
-                    await conn1.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
-                    print("✓ Granted directly")
-                except Exception as e2:
-                    print(f"⚠ Direct grant failed: {e2}")
-        except Exception as e:
-            print(f"⚠ Grant warning: {e}")
-        finally:
-            await conn1.close()
-
-        # Step 2: Open a fresh connection to create tables (picks up new grants)
-        conn2 = await asyncpg.connect(dsn=settings.DATABASE_URL)
-        try:
-            await conn2.execute("SET search_path TO public")
             for ddl_name, ddl in [
                 ("orderbook", DDL_ORDERBOOK),
                 ("history", DDL_HISTORY),
@@ -241,20 +218,20 @@ async def ensure_tables() -> None:
                 ("stats", DDL_STATS),
             ]:
                 try:
-                    await conn2.execute(ddl)
+                    await conn.execute(ddl)
                     print(f"✓ Table {ddl_name} ready")
                 except Exception as e:
-                    print(f"⚠ Table {ddl_name} failed: {e}")
+                    print(f"⚠ Table {ddl_name} warning: {e}")
 
             for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
                 stmt = stmt.strip()
                 if stmt:
                     try:
-                        await conn2.execute(stmt)
+                        await conn.execute(stmt)
                     except Exception:
                         pass
         finally:
-            await conn2.close()
+            await conn.close()
     except Exception as e:
         print(f"⚠ Could not create tables: {e}")
 
