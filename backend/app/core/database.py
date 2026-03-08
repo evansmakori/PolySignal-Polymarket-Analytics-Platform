@@ -212,9 +212,19 @@ async def ensure_tables() -> None:
         try:
             current_user = await conn1.fetchval("SELECT current_user")
             print(f"✓ Connected as: {current_user}")
-            await conn1.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
-            await conn1.execute(f'GRANT CREATE ON SCHEMA public TO "{current_user}"')
-            print("✓ Granted schema permissions")
+            # Try setting role to pg_database_owner (user may be a member)
+            try:
+                await conn1.execute("SET ROLE pg_database_owner")
+                await conn1.execute(f'GRANT ALL ON SCHEMA public TO "{current_user}"')
+                await conn1.execute("RESET ROLE")
+                print("✓ Granted via pg_database_owner role")
+            except Exception as e1:
+                print(f"⚠ Role grant failed: {e1}")
+                try:
+                    await conn1.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
+                    print("✓ Granted directly")
+                except Exception as e2:
+                    print(f"⚠ Direct grant failed: {e2}")
         except Exception as e:
             print(f"⚠ Grant warning: {e}")
         finally:
