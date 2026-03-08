@@ -21,7 +21,15 @@ async def lifespan(app: FastAPI):
         from .core.database import get_pool
         pool = await get_pool()
         async with pool.acquire() as conn:
-            await conn.execute("GRANT ALL PRIVILEGES ON SCHEMA public TO CURRENT_USER")
+            # Try to fix schema permissions (works if user is superuser or schema owner)
+            try:
+                await conn.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
+            except Exception:
+                pass
+            try:
+                await conn.execute("SET search_path TO public")
+            except Exception:
+                pass
         await ensure_tables()
         print("✓ PostgreSQL connection pool initialized")
         print("✓ Database tables ensured")

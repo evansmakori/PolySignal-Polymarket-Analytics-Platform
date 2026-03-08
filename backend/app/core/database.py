@@ -164,6 +164,7 @@ async def create_pool() -> asyncpg.Pool:
         min_size=2,
         max_size=10,
         command_timeout=60,
+        server_settings={"search_path": "public"},
     )
     return _pool
 
@@ -190,6 +191,16 @@ async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
     pool = await get_pool()
     async with pool.acquire() as conn:
+        # Try to grant permissions on public schema (may fail on managed DBs)
+        for grant_sql in [
+            "GRANT ALL ON SCHEMA public TO CURRENT_USER",
+            "GRANT CREATE ON SCHEMA public TO CURRENT_USER",
+        ]:
+            try:
+                await conn.execute(grant_sql)
+            except Exception:
+                pass
+
         async with conn.transaction():
             await conn.execute(DDL_ORDERBOOK)
             await conn.execute(DDL_HISTORY)
@@ -198,7 +209,10 @@ async def ensure_tables() -> None:
             for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
                 stmt = stmt.strip()
                 if stmt:
-                    await conn.execute(stmt)
+                    try:
+                        await conn.execute(stmt)
+                    except Exception:
+                        pass
 
 
 # ---------------------------------------------------------------------------
