@@ -183,7 +183,7 @@ async def create_pool() -> asyncpg.Pool:
     for attempt in range(1, max_retries + 1):
         try:
             _pool = await asyncpg.create_pool(
-                dsn=settings.DATABASE_URL,
+                dsn=settings.database_url,
                 min_size=2,
                 max_size=10,
                 command_timeout=60,
@@ -221,7 +221,7 @@ async def close_pool() -> None:
 async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
     try:
-        conn = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        conn = await asyncpg.connect(dsn=settings.database_url)
         try:
             current_user = await conn.fetchval("SELECT current_user")
             print(f"✓ Connected as: {current_user}")

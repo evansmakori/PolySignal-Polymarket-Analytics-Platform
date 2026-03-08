@@ -1,13 +1,20 @@
 """Configuration settings for the application."""
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import List, Optional
+import os
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/polymarket"
+    DATABASE_URL: Optional[str] = None
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
+    DB_NAME: str = "polymarket"
+    DB_SSLMODE: str = "disable"
 
     # API Settings
     API_HOST: str = "0.0.0.0"
@@ -28,6 +35,14 @@ class Settings(BaseSettings):
     USE_UTC: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
+    @property
+    def database_url(self) -> str:
+        """Build database URL from components if DATABASE_URL not set."""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        sslmode = self.DB_SSLMODE
+        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?sslmode={sslmode}"
 
     @property
     def cors_origins_list(self) -> List[str]:
