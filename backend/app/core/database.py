@@ -157,10 +157,20 @@ _pool: Optional[asyncpg.Pool] = None
 
 
 async def _set_search_path(conn):
-    """Set search_path to current user's schema + public on every new connection."""
-    current_user = await conn.fetchval("SELECT current_user")
-    await conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{current_user}"')
-    await conn.execute(f'SET search_path TO "{current_user}", public')
+    """Set search_path on every new connection."""
+    # Use the user's default schema if available, fall back to public
+    try:
+        current_user = await conn.fetchval("SELECT current_user")
+        schemas = await conn.fetch(
+            "SELECT schema_name FROM information_schema.schemata WHERE schema_owner = current_user"
+        )
+        if schemas:
+            schema_name = schemas[0]['schema_name']
+            await conn.execute(f'SET search_path TO "{schema_name}", public')
+        else:
+            await conn.execute("SET search_path TO public")
+    except Exception:
+        pass
 
 
 async def create_pool() -> asyncpg.Pool:
@@ -199,14 +209,19 @@ async def ensure_tables() -> None:
     try:
         conn = await asyncpg.connect(dsn=settings.DATABASE_URL)
         try:
-            # Get current user and create their own schema if needed
             current_user = await conn.fetchval("SELECT current_user")
             print(f"✓ Connected as: {current_user}")
 
-            # Create a schema named after the current user (always allowed)
-            await conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{current_user}"')
-            await conn.execute(f'SET search_path TO "{current_user}", public')
-            print(f"✓ Using schema: {current_user}")
+            # Find a schema owned by this user
+            schemas = await conn.fetch(
+                "SELECT schema_name FROM information_schema.schemata WHERE schema_owner = current_user"
+            )
+            if schemas:
+                schema_name = schemas[0]['schema_name']
+                await conn.execute(f'SET search_path TO "{schema_name}", public')
+                print(f"✓ Using schema: {schema_name}")
+            else:
+                print("⚠ No user-owned schema found, using public")
 
             for ddl_name, ddl in [
                 ("orderbook", DDL_ORDERBOOK),
