@@ -139,6 +139,10 @@ CREATE TABLE IF NOT EXISTS {TBL_STATS} (
     price_change_1mo     DOUBLE PRECISION,
     price_change_1yr     DOUBLE PRECISION,
 
+    -- risk metrics
+    degen_risk           DOUBLE PRECISION,
+    liquidity_score      DOUBLE PRECISION,
+
     PRIMARY KEY (market_id, snapshot_ts)
 );
 """
@@ -236,6 +240,16 @@ async def ensure_tables() -> None:
                     print(f"✓ Table {ddl_name} ready")
                 except Exception as e:
                     print(f"⚠ Table {ddl_name} warning: {e}")
+
+            # Add new columns to existing tables (safe, idempotent)
+            for alter_sql in [
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS degen_risk DOUBLE PRECISION",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS liquidity_score DOUBLE PRECISION",
+            ]:
+                try:
+                    await conn.execute(alter_sql)
+                except Exception:
+                    pass
 
             for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
                 stmt = stmt.strip()
@@ -376,14 +390,15 @@ async def upsert_market_stats(stats: dict) -> None:
                 sentiment_momentum, late_overconfidence,
                 predictive_score, score_category,
                 price_change_1h, price_change_1d, price_change_1wk,
-                price_change_1mo, price_change_1yr
+                price_change_1mo, price_change_1yr,
+                degen_risk, liquidity_score
             ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
                 $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
                 $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
                 $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
                 $41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-                $51
+                $51,$52,$53
             )
             ON CONFLICT (market_id, snapshot_ts) DO UPDATE SET
                 token_id_yes        = EXCLUDED.token_id_yes,
@@ -434,7 +449,9 @@ async def upsert_market_stats(stats: dict) -> None:
                 price_change_1d     = EXCLUDED.price_change_1d,
                 price_change_1wk    = EXCLUDED.price_change_1wk,
                 price_change_1mo    = EXCLUDED.price_change_1mo,
-                price_change_1yr    = EXCLUDED.price_change_1yr
+                price_change_1yr    = EXCLUDED.price_change_1yr,
+                degen_risk          = EXCLUDED.degen_risk,
+                liquidity_score     = EXCLUDED.liquidity_score
             """,
             # --- $1 .. $51 ---
             stats.get("market_id"),
@@ -500,6 +517,9 @@ async def upsert_market_stats(stats: dict) -> None:
             _safe_float(stats.get("price_change_1wk")),
             _safe_float(stats.get("price_change_1mo")),
             _safe_float(stats.get("price_change_1yr")),
+            # risk metrics
+            _safe_float(stats.get("degen_risk")),
+            _safe_float(stats.get("liquidity_score")),
         )
 
 

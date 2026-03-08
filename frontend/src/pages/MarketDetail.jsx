@@ -154,8 +154,24 @@ function MarketDetail() {
                 {displayData.title}
               </h1>
               {displayData.category && (
-                <span className="inline-block px-3 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                <span className="inline-block px-3 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 mr-2">
                   {displayData.category}
+                </span>
+              )}
+              {/* Trade Signal */}
+              {displayData.trade_signal && (
+                <span className={`inline-block px-3 py-1 text-sm rounded-full font-semibold mr-2 ${getSignalColor(displayData.trade_signal)}`}>
+                  {displayData.trade_signal === 'long' ? '📈 Long' : displayData.trade_signal === 'short' ? '📉 Short' : '⏸ No Trade'}
+                </span>
+              )}
+              {/* Degen Risk */}
+              {displayData.degen_risk != null && (
+                <span className={`inline-block px-3 py-1 text-sm rounded-full font-semibold ${
+                  displayData.degen_risk < 0.3 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                  displayData.degen_risk < 0.6 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                }`}>
+                  🎲 Degen Risk: {(displayData.degen_risk * 100).toFixed(0)}%
                 </span>
               )}
             </div>
