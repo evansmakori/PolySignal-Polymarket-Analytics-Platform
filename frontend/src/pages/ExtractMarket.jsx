@@ -387,8 +387,14 @@ function ExtractMarket() {
                       <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
                         Extracting {jobStatus.markets_found} market(s)...
                       </h3>
-                      <p className="text-sm text-blue-800 dark:text-blue-300">
-                        Fetching orderbooks, price history, and computing analytics. This takes 30–90 seconds for large events.
+                      <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                        {jobStatus.step || 'Initializing...'}
+                      </p>
+                      <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-1.5">
+                        <div className="bg-blue-600 h-1.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                      </div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        This typically takes 30–90 seconds for large events.
                       </p>
                     </>
                   )}

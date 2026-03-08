@@ -111,15 +111,17 @@ async def extract_market_data(
 
     async def run_extraction():
         try:
-            # Pass pre-resolved markets to avoid a second blocking API call
+            _extraction_jobs[job_id]["step"] = "Fetching orderbooks & price history in parallel..."
             result = await extract_from_url(
                 url=(markets, event_obj),
                 depth=request.depth,
                 intervals=request.intervals,
                 fidelity_min=request.fidelity_min,
                 base_rate=request.base_rate,
+                progress_callback=lambda step: _extraction_jobs[job_id].update({"step": step}),
             )
             _extraction_jobs[job_id]["status"] = "done"
+            _extraction_jobs[job_id]["step"] = "Complete!"
             _extraction_jobs[job_id]["market_ids"] = result.get("market_ids", [])
             _extraction_jobs[job_id]["markets_processed"] = result.get("markets_processed", 0)
         except Exception as e:

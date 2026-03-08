@@ -287,6 +287,7 @@ async def extract_from_url(
     intervals: List[str] = None,
     fidelity_min: int = None,
     base_rate: float = None,
+    progress_callback=None,
 ) -> Dict[str, Any]:
     """
     One-shot extraction for a single URL.
@@ -335,7 +336,12 @@ async def extract_from_url(
             rows = await loop.run_in_executor(executor, fetch_prices_history, token_id, interval, fidelity_min)
         return (token_id, interval), rows
 
+    def _progress(msg):
+        if progress_callback:
+            progress_callback(msg)
+
     # Run all fetches concurrently (with semaphore throttling)
+    _progress(f"Fetching orderbooks & price history for {len(all_token_ids)} tokens in parallel...")
     ob_tasks = [fetch_ob_async(tid) for tid in all_token_ids]
     hist_tasks = [fetch_hist_async(tid, iv) for tid in all_token_ids for iv in intervals]
 
@@ -348,6 +354,7 @@ async def extract_from_url(
     ob_map = {tid: ob for tid, ob in ob_results}
     hist_map = {key: rows for key, rows in hist_results}
 
+    _progress("Saving orderbooks & price history to database...")
     # Persist orderbooks and histories concurrently
     persist_tasks = []
     for tid, ob in ob_map.items():
@@ -356,17 +363,23 @@ async def extract_from_url(
         persist_tasks.append(upsert_history(tid, rows))
     await asyncio.gather(*persist_tasks)
 
-    # Assemble stats and persist each market
+    _progress("Computing analytics & scoring...")
+    # Assemble stats for all markets (CPU-bound, in-memory)
     all_stats_rows: List[Dict[str, Any]] = []
+    for market in markets:
+        stats_row = assemble_market_stats(market, event_obj, ob_map, hist_map, asof, base_rate)
+        all_stats_rows.append(stats_row)
+
+    _progress("Saving market stats to database...")
+    # Persist all market stats concurrently
+    await asyncio.gather(*[upsert_market_stats(row) for row in all_stats_rows])
+
+    _progress("Fetching recent trades...")
+    # Fetch recent trades for all markets in parallel (non-critical)
     from .polymarket import fetch_recent_trades
     from .database import upsert_trades
 
-    for market in markets:
-        stats_row = assemble_market_stats(market, event_obj, ob_map, hist_map, asof, base_rate)
-        await upsert_market_stats(stats_row)
-        all_stats_rows.append(stats_row)
-
-        # Fetch recent trades for YES token (non-critical, skip on error)
+    async def fetch_and_store_trades(market, stats_row):
         yes_token_id, _, _ = get_yes_no_token_ids(market)
         if yes_token_id:
             try:
@@ -375,6 +388,8 @@ async def extract_from_url(
                     await upsert_trades(yes_token_id, stats_row["market_id"], trades)
             except Exception:
                 pass
+
+    await asyncio.gather(*[fetch_and_store_trades(m, s) for m, s in zip(markets, all_stats_rows)])
 
     executor.shutdown(wait=False)
     market_ids = [stats["market_id"] for stats in all_stats_rows]
