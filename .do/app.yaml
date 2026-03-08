@@ -33,6 +33,10 @@ ingress:
 
 services:
   - name: backend
+    github:
+      repo: evansmakori/Predict_my_polymarket
+      branch: main
+      deploy_on_push: true
     source_dir: backend
     dockerfile_path: backend/Dockerfile
     http_port: 8000
@@ -87,6 +91,10 @@ services:
         scope: RUN_TIME
 
   - name: frontend
+    github:
+      repo: evansmakori/Predict_my_polymarket
+      branch: main
+      deploy_on_push: true
     source_dir: frontend
     dockerfile_path: frontend/Dockerfile
     http_port: 80
