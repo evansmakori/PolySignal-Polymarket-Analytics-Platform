@@ -12,13 +12,18 @@ function EventDetail() {
   const [signalFilter, setSignalFilter] = useState('all')
   const [liquidityFilter, setLiquidityFilter] = useState('all')
   const [signalDropdownOpen, setSignalDropdownOpen] = useState(false)
-  const dropdownRef = useRef(null)
+  const [liquidityDropdownOpen, setLiquidityDropdownOpen] = useState(false)
+  const signalDropdownRef = useRef(null)
+  const liquidityDropdownRef = useRef(null)
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (signalDropdownRef.current && !signalDropdownRef.current.contains(e.target)) {
         setSignalDropdownOpen(false)
+      }
+      if (liquidityDropdownRef.current && !liquidityDropdownRef.current.contains(e.target)) {
+        setLiquidityDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -49,16 +54,16 @@ function EventDetail() {
 
   const signalLabels = {
     all: 'Signal: All',
-    long: '📈 Long',
-    short: '📉 Short',
-    none: '⏸ No Trade',
+    long: 'Long',
+    short: 'Short',
+    none: 'No Trade',
   }
 
   const liquidityLabels = {
     all: 'Liquidity: All',
-    high: '💧 High (>$100K)',
-    medium: '💧 Medium ($10K-$100K)',
-    low: '💧 Low (<$10K)',
+    high: 'High (>$100K)',
+    medium: 'Medium ($10K-$100K)',
+    low: 'Low (<$10K)',
   }
 
   if (isLoading) return (
@@ -119,7 +124,7 @@ function EventDetail() {
         <div className="flex flex-wrap gap-3 items-center">
           
           {/* Signal Dropdown */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative" ref={signalDropdownRef}>
             <button
               onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -155,21 +160,34 @@ function EventDetail() {
             )}
           </div>
 
-          {/* Liquidity Filter */}
-          <div className="flex gap-2">
-            {Object.entries(liquidityLabels).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setLiquidityFilter(key)}
-                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  liquidityFilter === key
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          {/* Liquidity Dropdown */}
+          <div className="relative" ref={liquidityDropdownRef}>
+            <button
+              onClick={() => setLiquidityDropdownOpen(!liquidityDropdownOpen)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                liquidityFilter !== 'all'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {liquidityLabels[liquidityFilter]}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {liquidityDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                {Object.entries(liquidityLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setLiquidityFilter(key); setLiquidityDropdownOpen(false) }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center first:rounded-t-lg last:rounded-b-lg ${
+                      liquidityFilter === key ? 'text-blue-600 font-medium' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Result count */}
