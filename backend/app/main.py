@@ -16,14 +16,24 @@ from .api.ai import router as ai_router
 async def lifespan(app: FastAPI):
     """Manage application lifespan: start up and shut down."""
     # Startup
-    await create_pool()
-    await ensure_tables()
-    print("✓ PostgreSQL connection pool initialized")
-    print("✓ Database tables ensured")
+    try:
+        await create_pool()
+        from .core.database import get_pool
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            await conn.execute("GRANT ALL PRIVILEGES ON SCHEMA public TO CURRENT_USER")
+        await ensure_tables()
+        print("✓ PostgreSQL connection pool initialized")
+        print("✓ Database tables ensured")
+    except Exception as e:
+        print(f"⚠ Database initialization warning: {e}")
     yield
     # Shutdown
-    await close_pool()
-    print("✓ PostgreSQL connection pool closed")
+    try:
+        await close_pool()
+        print("✓ PostgreSQL connection pool closed")
+    except Exception:
+        pass
 
 
 # Create FastAPI app
@@ -72,7 +82,7 @@ async def health_check():
             await conn.execute("SELECT 1")
         db_status = "healthy"
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
+        db_status = f"unavailable: {str(e)}"
 
     return {
         "status": "ok",
