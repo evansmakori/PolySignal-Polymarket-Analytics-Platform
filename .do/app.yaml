@@ -46,7 +46,7 @@ services:
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        type: SECRET
+        value: "${db-postgresql-nyc1-60694.DATABASE_URL}"
       - key: API_HOST
         value: "0.0.0.0"
         scope: RUN_TIME
