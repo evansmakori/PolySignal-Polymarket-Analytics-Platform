@@ -2,8 +2,8 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from ..core.database_duckdb import get_pool, TBL_STATS, TBL_HIST, TBL_OB
-from ..models.market import MarketListItem, MarketStats, MarketFilter
+from ..core.database import get_pool, TBL_STATS, TBL_HIST, TBL_OB
+from ..models.market import MarketFilter
 from ..core.scoring import rank_markets, calculate_market_score
 
 
@@ -44,17 +44,16 @@ class MarketService:
         query = f"""
         WITH latest AS (
             SELECT market_id, MAX(snapshot_ts) AS max_ts
-            FROM polymarket_market_stats
+            FROM {TBL_STATS}
             GROUP BY market_id
         )
         SELECT
             s.market_id, s.title, s.category,
             s.yes_price, s.no_price,
-            COALESCE(s.volume, s.volume_clob, 0) AS volume_24h,
+            COALESCE(s.volume_24h, 0) AS volume_24h,
             s.liquidity,
-            s.trade_signal, s.snapshot_ts,
-            s.degen_risk
-        FROM polymarket_market_stats s
+            s.trade_signal, s.snapshot_ts
+        FROM {TBL_STATS} s
         INNER JOIN latest l ON s.market_id = l.market_id AND s.snapshot_ts = l.max_ts
         WHERE 1=1 {where_sql}
         ORDER BY s.liquidity DESC NULLS LAST
@@ -70,7 +69,7 @@ class MarketService:
         """Get detailed market stats by ID (latest snapshot)."""
         pool = await get_pool()
         query = f"""
-        SELECT * FROM polymarket_market_stats
+        SELECT * FROM {TBL_STATS}
         WHERE market_id = $1
         ORDER BY snapshot_ts DESC
         LIMIT 1
@@ -79,13 +78,7 @@ class MarketService:
             row = await conn.fetchrow(query, market_id)
         if not row:
             return None
-        # Normalise column names for the rest of the app
-        d = dict(row)
-        d.setdefault("token_id_yes", d.get("yes_token_id"))
-        d.setdefault("token_id_no",  d.get("no_token_id"))
-        d.setdefault("volume_24h",   d.get("volume") or d.get("volume_clob") or 0)
-        d.setdefault("volatility",   d.get("volatility_1w"))
-        return d
+        return dict(row)
 
     @staticmethod
     async def get_market_history(
@@ -96,29 +89,27 @@ class MarketService:
         """Get price history for a market."""
         pool = await get_pool()
 
-        # Get YES token ID
         async with pool.acquire() as conn:
             token_row = await conn.fetchrow(
                 f"""
-                SELECT yes_token_id
-                FROM polymarket_market_stats
+                SELECT token_id_yes
+                FROM {TBL_STATS}
                 WHERE market_id = $1
                 ORDER BY snapshot_ts DESC
                 LIMIT 1
                 """,
                 market_id,
             )
-            if not token_row:
+            if not token_row or not token_row["token_id_yes"]:
                 return []
-            yes_token_id = token_row.get("yes_token_id")
-            if not yes_token_id:
-                return []
+
+            yes_token_id = token_row["token_id_yes"]
 
             rows = await conn.fetch(
                 f"""
-                SELECT t AS ts, price FROM polymarket_prices_history
+                SELECT ts, price FROM {TBL_HIST}
                 WHERE token_id = $1 AND interval = $2
-                ORDER BY t DESC
+                ORDER BY ts DESC
                 LIMIT $3
                 """,
                 yes_token_id, interval, limit,
@@ -134,8 +125,8 @@ class MarketService:
         async with pool.acquire() as conn:
             token_row = await conn.fetchrow(
                 f"""
-                SELECT yes_token_id, no_token_id
-                FROM polymarket_market_stats
+                SELECT token_id_yes, token_id_no
+                FROM {TBL_STATS}
                 WHERE market_id = $1
                 ORDER BY snapshot_ts DESC
                 LIMIT 1
@@ -146,15 +137,15 @@ class MarketService:
                 return result
 
             ob_query = f"""
-            SELECT side, level, price, size FROM polymarket_orderbook
+            SELECT side, level, price, size FROM {TBL_OB}
             WHERE token_id = $1
               AND snapshot_ts = (
-                  SELECT MAX(snapshot_ts) FROM polymarket_orderbook WHERE token_id = $2
+                  SELECT MAX(snapshot_ts) FROM {TBL_OB} WHERE token_id = $2
               )
             ORDER BY side, level
             """
 
-            for side_key, col in [("yes", "yes_token_id"), ("no", "no_token_id")]:
+            for side_key, col in [("yes", "token_id_yes"), ("no", "token_id_no")]:
                 token_id = token_row[col]
                 if token_id:
                     rows = await conn.fetch(ob_query, token_id, token_id)
@@ -170,8 +161,8 @@ class MarketService:
     async def get_categories() -> List[str]:
         """Get list of unique categories."""
         pool = await get_pool()
-        query = """
-        SELECT DISTINCT category FROM polymarket_market_stats
+        query = f"""
+        SELECT DISTINCT category FROM {TBL_STATS}
         WHERE category IS NOT NULL
         ORDER BY category
         """
@@ -183,7 +174,7 @@ class MarketService:
     async def get_market_count() -> int:
         """Get total number of unique markets."""
         pool = await get_pool()
-        query = "SELECT COUNT(DISTINCT market_id) AS count FROM polymarket_market_stats"
+        query = f"SELECT COUNT(DISTINCT market_id) AS count FROM {TBL_STATS}"
         async with pool.acquire() as conn:
             row = await conn.fetchrow(query)
         return row["count"] if row else 0
@@ -225,11 +216,11 @@ class MarketService:
         query = f"""
         WITH latest AS (
             SELECT market_id, MAX(snapshot_ts) AS max_ts
-            FROM polymarket_market_stats
+            FROM {TBL_STATS}
             GROUP BY market_id
         )
         SELECT s.*
-        FROM polymarket_market_stats s
+        FROM {TBL_STATS} s
         INNER JOIN latest l ON s.market_id = l.market_id AND s.snapshot_ts = l.max_ts
         WHERE 1=1 {where_sql}
         LIMIT ${limit_n} OFFSET ${offset_n}
@@ -238,14 +229,7 @@ class MarketService:
         async with pool.acquire() as conn:
             rows = await conn.fetch(query, *args)
 
-        markets = []
-        for r in rows:
-            d = dict(r)
-            d.setdefault("token_id_yes", d.get("yes_token_id"))
-            d.setdefault("token_id_no",  d.get("no_token_id"))
-            d.setdefault("volume_24h",   d.get("volume") or d.get("volume_clob") or 0)
-            d.setdefault("volatility",   d.get("volatility_1w"))
-            markets.append(d)
+        markets = [dict(r) for r in rows]
         return rank_markets(markets, normalization_params)
 
     @staticmethod
@@ -288,57 +272,41 @@ class MarketService:
 
     @staticmethod
     async def get_market_since_launch(market_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get complete market history since launch with statistics.
-        
-        Returns:
-            {
-                market_id, title, category, end_date, launch_date,
-                current_price, history: [{ts, price}],
-                stats: {
-                    total_bars, days_since_launch, price_change_since_launch,
-                    max_price, min_price, current_price, volatility_all_time
-                }
-            }
-        """
+        """Get complete market history since launch with statistics."""
         pool = await get_pool()
-        
-        # Get market metadata and YES token ID from latest snapshot
+
         async with pool.acquire() as conn:
             market_row = await conn.fetchrow(
                 f"""
-                SELECT 
-                    market_id, title, category, end_date, yes_price, 
-                    snapshot_ts, yes_token_id
-                FROM polymarket_market_stats
+                SELECT market_id, title, category, end_date, yes_price,
+                       snapshot_ts, token_id_yes
+                FROM {TBL_STATS}
                 WHERE market_id = $1
                 ORDER BY snapshot_ts DESC
                 LIMIT 1
                 """,
                 market_id,
             )
-        
+
         if not market_row:
             return None
-        
-        yes_token_id = market_row.get("yes_token_id")
+
+        yes_token_id = market_row["token_id_yes"]
         current_price = float(market_row["yes_price"]) if market_row["yes_price"] else 0.5
-        
-        # Get full history from database ordered by ts ASC (chronological)
+
         async with pool.acquire() as conn:
             hist_rows = await conn.fetch(
                 f"""
-                SELECT t AS ts, price
-                FROM polymarket_prices_history
+                SELECT ts, price
+                FROM {TBL_HIST}
                 WHERE token_id = $1
-                ORDER BY t ASC
+                ORDER BY ts ASC
                 """,
                 yes_token_id,
             )
-        
+
         history = [{"ts": r["ts"], "price": float(r["price"])} for r in hist_rows]
-        
-        # Calculate statistics
+
         if history:
             launch_date = history[0]["ts"]
             launch_price = float(history[0]["price"])
@@ -346,18 +314,16 @@ class MarketService:
             max_price = max(prices)
             min_price = min(prices)
             price_change = current_price - launch_price
-            
-            # Calculate volatility (standard deviation of price changes)
+
             import numpy as np
             if len(prices) > 1:
                 price_returns = np.diff(prices)
-                volatility_all_time = float(np.std(price_returns)) if len(price_returns) > 0 else 0.0
+                volatility_all_time = float(np.std(price_returns))
             else:
                 volatility_all_time = 0.0
-            
+
             from datetime import timezone as tz_module
-            # Ensure launch_date is timezone-aware before subtracting
-            if hasattr(launch_date, 'tzinfo') and launch_date.tzinfo is None:
+            if hasattr(launch_date, "tzinfo") and launch_date.tzinfo is None:
                 launch_date = launch_date.replace(tzinfo=tz_module.utc)
             days_since_launch = (
                 (datetime.now(tz_module.utc) - launch_date).total_seconds() / 86400
@@ -370,7 +336,7 @@ class MarketService:
             price_change = 0.0
             volatility_all_time = 0.0
             days_since_launch = 0.0
-        
+
         return {
             "market_id": market_id,
             "title": market_row["title"],

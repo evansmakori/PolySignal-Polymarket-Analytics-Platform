@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from enum import Enum
 
-from .database_duckdb import get_pool, TBL_STATS
+from .database import get_pool, TBL_STATS
 from .scoring import calculate_market_score
 from .score_history import get_score_trend
 
@@ -204,11 +204,11 @@ async def check_new_opportunities(
     SELECT s.*, fs.first_ts
     FROM {TBL_STATS} s
     INNER JOIN first_seen fs ON s.market_id = fs.market_id AND s.snapshot_ts = fs.first_ts
-    WHERE fs.first_ts >= NOW() - ($1 || ' hours')::INTERVAL
+    WHERE fs.first_ts >= NOW() - ($1 * INTERVAL '1 hour')
     """
 
     async with pool.acquire() as conn:
-        rows = await conn.fetch(query, str(hours_back))
+        rows = await conn.fetch(query, hours_back)
 
     alerts = []
     for row in rows:

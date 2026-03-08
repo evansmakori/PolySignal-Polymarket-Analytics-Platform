@@ -35,7 +35,7 @@ from .analytics import (
     compute_trade_signal,
     detect_late_overconfidence,
 )
-from .database_duckdb import (
+from .database import (
     upsert_orderbook,
     upsert_history,
     upsert_market_stats,
@@ -359,7 +359,7 @@ async def extract_from_url(
     # Assemble stats and persist each market
     all_stats_rows: List[Dict[str, Any]] = []
     from .polymarket import fetch_recent_trades
-    from .database_duckdb import upsert_trades
+    from .database import upsert_trades
 
     for market in markets:
         stats_row = assemble_market_stats(market, event_obj, ob_map, hist_map, asof, base_rate)

@@ -306,7 +306,7 @@ async def compare_event_markets(
                 "predictive_score": score_result["score"],
                 "score_category": score_result["category"],
                 "spread": market.get("spread"),
-                "volatility": market.get("volatility_1w"),
+                "volatility": market.get("volatility"),
                 "orderbook_imbalance": market.get("orderbook_imbalance"),
             })
     
@@ -359,7 +359,7 @@ async def get_event_summary(
                 "predictive_score": score_result["score"],
                 "score_category": score_result["category"],
                 "spread": market.get("spread"),
-                "volatility": market.get("volatility_1w"),
+                "volatility": market.get("volatility"),
                 "orderbook_imbalance": market.get("orderbook_imbalance"),
             }
             markets_data.append(market_info)
@@ -483,7 +483,7 @@ async def get_market_trades(
     - **limit**: Number of trades to return
     - **live**: If true, fetch fresh from Polymarket API instead of DB
     """
-    from ..core.database_duckdb import get_pool, TBL_STATS
+    from ..core.database import get_pool
     from ..core.polymarket import fetch_recent_trades
     
     pool = await get_pool()
@@ -491,14 +491,14 @@ async def get_market_trades(
     # Get YES token ID
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT yes_token_id FROM polymarket_market_stats WHERE market_id = $1 ORDER BY snapshot_ts DESC LIMIT 1",
+            "SELECT token_id_yes FROM polymarket_market_stats WHERE market_id = $1 ORDER BY snapshot_ts DESC LIMIT 1",
             market_id
         )
     
-    if not row or not row["yes_token_id"]:
+    if not row or not row["token_id_yes"]:
         raise HTTPException(status_code=404, detail="Market not found")
     
-    token_id = row["yes_token_id"]
+    token_id = row["token_id_yes"]
     
     if live:
         # Fetch fresh from API

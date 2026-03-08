@@ -3,6 +3,7 @@ PostgreSQL database connection and schema management.
 Uses asyncpg connection pool for async FastAPI compatibility.
 """
 import asyncpg
+import datetime
 from typing import Optional
 from .config import settings
 
@@ -53,6 +54,9 @@ CREATE TABLE IF NOT EXISTS {TBL_TRADES} (
     taker_addr   TEXT,
     fetched_at   TIMESTAMPTZ DEFAULT NOW()
 );
+"""
+
+DDL_TRADES_IDX = f"""
 CREATE INDEX IF NOT EXISTS idx_trades_market_id ON {TBL_TRADES} (market_id);
 CREATE INDEX IF NOT EXISTS idx_trades_trade_ts  ON {TBL_TRADES} (trade_ts DESC);
 """
@@ -61,15 +65,23 @@ DDL_STATS = f"""
 CREATE TABLE IF NOT EXISTS {TBL_STATS} (
     -- identity
     market_id            TEXT        NOT NULL,
+    snapshot_ts          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- tokens
     token_id_yes         TEXT,
     token_id_no          TEXT,
-    snapshot_ts          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     -- market metadata
     title                TEXT,
     category             TEXT,
     end_date             TIMESTAMPTZ,
+    start_date           TIMESTAMPTZ,
+    creation_date        TIMESTAMPTZ,
     description          TEXT,
+    tags                 TEXT,
+    resolution_source    TEXT,
+    comment_count        INTEGER,
+    competitive          BOOLEAN,
 
     -- pricing
     yes_price            DOUBLE PRECISION,
@@ -87,6 +99,9 @@ CREATE TABLE IF NOT EXISTS {TBL_STATS} (
     -- volume / liquidity
     volume_24h           DOUBLE PRECISION,
     volume_total         DOUBLE PRECISION,
+    volume_1wk           DOUBLE PRECISION,
+    volume_1mo           DOUBLE PRECISION,
+    volume_1yr           DOUBLE PRECISION,
     liquidity            DOUBLE PRECISION,
     open_interest        DOUBLE PRECISION,
 
@@ -116,21 +131,12 @@ CREATE TABLE IF NOT EXISTS {TBL_STATS} (
     predictive_score     DOUBLE PRECISION,
     score_category       TEXT,
 
-    -- New Tier 1 fields
+    -- price changes
     price_change_1h      DOUBLE PRECISION,
     price_change_1d      DOUBLE PRECISION,
     price_change_1wk     DOUBLE PRECISION,
     price_change_1mo     DOUBLE PRECISION,
     price_change_1yr     DOUBLE PRECISION,
-    volume_1wk           DOUBLE PRECISION,
-    volume_1mo           DOUBLE PRECISION,
-    volume_1yr           DOUBLE PRECISION,
-    comment_count        INTEGER,
-    competitive          BOOLEAN,
-    resolution_source    TEXT,
-    creation_date        TIMESTAMPTZ,
-    start_date           TIMESTAMPTZ,
-    tags                 TEXT,
 
     PRIMARY KEY (market_id, snapshot_ts)
 );
@@ -140,8 +146,8 @@ DDL_STATS_IDX = f"""
 CREATE INDEX IF NOT EXISTS idx_stats_market_id   ON {TBL_STATS} (market_id);
 CREATE INDEX IF NOT EXISTS idx_stats_snapshot_ts ON {TBL_STATS} (snapshot_ts DESC);
 CREATE INDEX IF NOT EXISTS idx_stats_category    ON {TBL_STATS} (category);
-CREATE INDEX IF NOT EXISTS idx_stats_price_change_1d ON {TBL_STATS} (price_change_1d DESC NULLS LAST);
-CREATE INDEX IF NOT EXISTS idx_stats_volume_1wk ON {TBL_STATS} (volume_1wk DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_stats_score       ON {TBL_STATS} (predictive_score DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_stats_liquidity   ON {TBL_STATS} (liquidity DESC NULLS LAST);
 """
 
 # ---------------------------------------------------------------------------
@@ -189,20 +195,56 @@ async def ensure_tables() -> None:
             await conn.execute(DDL_HISTORY)
             await conn.execute(DDL_TRADES)
             await conn.execute(DDL_STATS)
-            for stmt in DDL_STATS_IDX.strip().split("\n"):
+            for stmt in (DDL_TRADES_IDX + DDL_STATS_IDX).strip().split("\n"):
                 stmt = stmt.strip()
                 if stmt:
                     await conn.execute(stmt)
 
 
 # ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+def _to_ts(val):
+    """Coerce a value to datetime or None."""
+    if val is None:
+        return None
+    if isinstance(val, datetime.datetime):
+        return val
+    try:
+        return datetime.datetime.fromisoformat(str(val))
+    except Exception:
+        return None
+
+
+def _safe_float(val, default=None):
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_int(val, default=None):
+    if val is None:
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_bool(val, default=None):
+    if val is None:
+        return default
+    return bool(val)
+
+
+# ---------------------------------------------------------------------------
 # Upsert helpers
 # ---------------------------------------------------------------------------
-async def upsert_orderbook(token_id: str, snapshot_ts, rows: list[dict]) -> None:
-    """
-    Replace the orderbook snapshot for a token.
-    Deletes old snapshot rows then inserts the new ones.
-    """
+async def upsert_orderbook(token_id: str, snapshot_ts, rows: list) -> None:
+    """Replace the orderbook snapshot for a token."""
     pool = await get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
@@ -227,8 +269,12 @@ async def upsert_orderbook(token_id: str, snapshot_ts, rows: list[dict]) -> None
                 )
 
 
-async def upsert_history(token_id: str, bars: list[dict]) -> None:
-    """Insert or update price history bars."""
+async def upsert_history(token_id: str, bars: list) -> None:
+    """Insert or update price history bars.
+    
+    Accepts bars with either 'ts'/'t'/'timestamp' key for the timestamp,
+    and 'fidelity'/'fidelity_min' for the fidelity field.
+    """
     if not bars:
         return
     pool = await get_pool()
@@ -245,9 +291,9 @@ async def upsert_history(token_id: str, bars: list[dict]) -> None:
             [
                 (
                     token_id,
-                    b.get("ts") or b.get("timestamp"),
+                    b.get("ts") or b.get("t") or b.get("timestamp"),
                     b.get("interval"),
-                    b.get("fidelity"),
+                    b.get("fidelity") or b.get("fidelity_min"),
                     b.get("price"),
                 )
                 for b in bars
@@ -256,43 +302,39 @@ async def upsert_history(token_id: str, bars: list[dict]) -> None:
 
 
 async def upsert_market_stats(stats: dict) -> None:
-    """Insert or update a market stats snapshot."""
-    import datetime
+    """Insert or update a market stats snapshot.
 
-    def _to_ts(val):
-        if val is None:
-            return None
-        if isinstance(val, datetime.datetime):
-            return val
-        try:
-            return datetime.datetime.fromisoformat(str(val))
-        except Exception:
-            return None
-
+    Accepts both the extractor-native field names (e.g. yes_token_id,
+    volume, volatility_1w) and the canonical DB column names
+    (token_id_yes, volume_24h, volatility).  Either form is fine.
+    """
     pool = await get_pool()
     async with pool.acquire() as conn:
         await conn.execute(
             f"""
             INSERT INTO {TBL_STATS} (
-                market_id, token_id_yes, token_id_no, snapshot_ts,
-                title, category, end_date, description,
+                market_id, snapshot_ts,
+                token_id_yes, token_id_no,
+                title, category, end_date, start_date, creation_date,
+                description, tags, resolution_source, comment_count, competitive,
                 yes_price, no_price, best_bid, best_ask, spread, mid_price,
                 last_trade_price, last_trade_size, last_trade_ts,
-                volume_24h, volume_total, liquidity, open_interest,
+                volume_24h, volume_total, volume_1wk, volume_1mo, volume_1yr,
+                liquidity, open_interest,
                 volatility, ma_short, ma_long, ema_slope, overreaction_z,
                 orderbook_imbalance, depth_liquidity, slippage_bps,
                 fair_value, expected_value, kelly_fraction, trade_signal,
                 sentiment_momentum, late_overconfidence,
                 predictive_score, score_category,
-                price_change_1h, price_change_1d, price_change_1wk, price_change_1mo, price_change_1yr,
-                volume_1wk, volume_1mo, volume_1yr,
-                comment_count, competitive, resolution_source,
-                creation_date, start_date, tags
+                price_change_1h, price_change_1d, price_change_1wk,
+                price_change_1mo, price_change_1yr
             ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
-                $15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,
-                $27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,
-                $39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+                $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+                $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
+                $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
+                $41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
+                $51
             )
             ON CONFLICT (market_id, snapshot_ts) DO UPDATE SET
                 token_id_yes        = EXCLUDED.token_id_yes,
@@ -300,7 +342,13 @@ async def upsert_market_stats(stats: dict) -> None:
                 title               = EXCLUDED.title,
                 category            = EXCLUDED.category,
                 end_date            = EXCLUDED.end_date,
+                start_date          = EXCLUDED.start_date,
+                creation_date       = EXCLUDED.creation_date,
                 description         = EXCLUDED.description,
+                tags                = EXCLUDED.tags,
+                resolution_source   = EXCLUDED.resolution_source,
+                comment_count       = EXCLUDED.comment_count,
+                competitive         = EXCLUDED.competitive,
                 yes_price           = EXCLUDED.yes_price,
                 no_price            = EXCLUDED.no_price,
                 best_bid            = EXCLUDED.best_bid,
@@ -312,6 +360,9 @@ async def upsert_market_stats(stats: dict) -> None:
                 last_trade_ts       = EXCLUDED.last_trade_ts,
                 volume_24h          = EXCLUDED.volume_24h,
                 volume_total        = EXCLUDED.volume_total,
+                volume_1wk          = EXCLUDED.volume_1wk,
+                volume_1mo          = EXCLUDED.volume_1mo,
+                volume_1yr          = EXCLUDED.volume_1yr,
                 liquidity           = EXCLUDED.liquidity,
                 open_interest       = EXCLUDED.open_interest,
                 volatility          = EXCLUDED.volatility,
@@ -334,72 +385,76 @@ async def upsert_market_stats(stats: dict) -> None:
                 price_change_1d     = EXCLUDED.price_change_1d,
                 price_change_1wk    = EXCLUDED.price_change_1wk,
                 price_change_1mo    = EXCLUDED.price_change_1mo,
-                price_change_1yr    = EXCLUDED.price_change_1yr,
-                volume_1wk          = EXCLUDED.volume_1wk,
-                volume_1mo          = EXCLUDED.volume_1mo,
-                volume_1yr          = EXCLUDED.volume_1yr,
-                comment_count       = EXCLUDED.comment_count,
-                competitive         = EXCLUDED.competitive,
-                resolution_source   = EXCLUDED.resolution_source,
-                creation_date       = EXCLUDED.creation_date,
-                start_date          = EXCLUDED.start_date,
-                tags                = EXCLUDED.tags
+                price_change_1yr    = EXCLUDED.price_change_1yr
             """,
+            # --- $1 .. $51 ---
             stats.get("market_id"),
-            stats.get("token_id_yes"),
-            stats.get("token_id_no"),
             _to_ts(stats.get("snapshot_ts")),
+            # tokens: accept both naming conventions
+            stats.get("token_id_yes") or stats.get("yes_token_id"),
+            stats.get("token_id_no")  or stats.get("no_token_id"),
+            # metadata
             stats.get("title"),
             stats.get("category"),
             _to_ts(stats.get("end_date")),
-            stats.get("description"),
-            stats.get("yes_price"),
-            stats.get("no_price"),
-            stats.get("best_bid"),
-            stats.get("best_ask"),
-            stats.get("spread"),
-            stats.get("mid_price"),
-            stats.get("last_trade_price"),
-            stats.get("last_trade_size"),
-            _to_ts(stats.get("last_trade_ts")),
-            stats.get("volume_24h"),
-            stats.get("volume_total"),
-            stats.get("liquidity"),
-            stats.get("open_interest"),
-            stats.get("volatility"),
-            stats.get("ma_short"),
-            stats.get("ma_long"),
-            stats.get("ema_slope"),
-            stats.get("overreaction_z"),
-            stats.get("orderbook_imbalance"),
-            stats.get("depth_liquidity"),
-            stats.get("slippage_bps"),
-            stats.get("fair_value"),
-            stats.get("expected_value"),
-            stats.get("kelly_fraction"),
-            stats.get("trade_signal"),
-            stats.get("sentiment_momentum"),
-            stats.get("late_overconfidence"),
-            stats.get("predictive_score"),
-            stats.get("score_category"),
-            stats.get("price_change_1h"),
-            stats.get("price_change_1d"),
-            stats.get("price_change_1wk"),
-            stats.get("price_change_1mo"),
-            stats.get("price_change_1yr"),
-            stats.get("volume_1wk"),
-            stats.get("volume_1mo"),
-            stats.get("volume_1yr"),
-            stats.get("comment_count"),
-            stats.get("competitive"),
-            stats.get("resolution_source"),
-            _to_ts(stats.get("creation_date")),
             _to_ts(stats.get("start_date")),
-            stats.get("tags"),
+            _to_ts(stats.get("creation_date") or stats.get("created_at")),
+            stats.get("description"),
+            # tags stored as JSON string if it's a list
+            (str(stats["tags"]) if isinstance(stats.get("tags"), list) else stats.get("tags")),
+            stats.get("resolution_source"),
+            _safe_int(stats.get("comment_count")),
+            _safe_bool(stats.get("competitive")),
+            # pricing
+            _safe_float(stats.get("yes_price")),
+            _safe_float(stats.get("no_price")),
+            _safe_float(stats.get("best_bid") or stats.get("best_bid_yes")),
+            _safe_float(stats.get("best_ask") or stats.get("best_ask_yes")),
+            _safe_float(stats.get("spread")),
+            _safe_float(stats.get("mid_price") or stats.get("yes_midpoint")),
+            # trades
+            _safe_float(stats.get("last_trade_price")),
+            _safe_float(stats.get("last_trade_size")),
+            _to_ts(stats.get("last_trade_ts")),
+            # volume / liquidity — accept both naming conventions
+            _safe_float(stats.get("volume_24h") or stats.get("volume")),
+            _safe_float(stats.get("volume_total") or stats.get("volume_clob")),
+            _safe_float(stats.get("volume_1wk")),
+            _safe_float(stats.get("volume_1mo")),
+            _safe_float(stats.get("volume_1yr")),
+            _safe_float(stats.get("liquidity")),
+            _safe_float(stats.get("open_interest")),
+            # technical indicators — accept both naming conventions
+            _safe_float(stats.get("volatility") or stats.get("volatility_1w")),
+            _safe_float(stats.get("ma_short")),
+            _safe_float(stats.get("ma_long")),
+            _safe_float(stats.get("ema_slope")),
+            _safe_float(stats.get("overreaction_z")),
+            # orderbook
+            _safe_float(stats.get("orderbook_imbalance")),
+            _safe_float(stats.get("depth_liquidity")),
+            _safe_float(stats.get("slippage_bps") or stats.get("slippage_notional_1k")),
+            # fair value / EV
+            _safe_float(stats.get("fair_value")),
+            _safe_float(stats.get("expected_value")),
+            _safe_float(stats.get("kelly_fraction")),
+            stats.get("trade_signal"),
+            # sentiment
+            _safe_float(stats.get("sentiment_momentum")),
+            _safe_bool(stats.get("late_overconfidence")),
+            # scoring
+            _safe_float(stats.get("predictive_score")),
+            stats.get("score_category"),
+            # price changes
+            _safe_float(stats.get("price_change_1h")),
+            _safe_float(stats.get("price_change_1d")),
+            _safe_float(stats.get("price_change_1wk")),
+            _safe_float(stats.get("price_change_1mo")),
+            _safe_float(stats.get("price_change_1yr")),
         )
 
 
-async def upsert_trades(token_id: str, market_id: str, trades: list[dict]) -> None:
+async def upsert_trades(token_id: str, market_id: str, trades: list) -> None:
     """Insert or ignore trades (no updates on conflict)."""
     if not trades:
         return
@@ -407,7 +462,9 @@ async def upsert_trades(token_id: str, market_id: str, trades: list[dict]) -> No
     async with pool.acquire() as conn:
         await conn.executemany(
             f"""
-            INSERT INTO {TBL_TRADES} (trade_id, market_id, token_id, side, price, size, trade_ts, maker_addr, taker_addr)
+            INSERT INTO {TBL_TRADES}
+                (trade_id, market_id, token_id, side, price, size,
+                 trade_ts, maker_addr, taker_addr)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             ON CONFLICT (trade_id) DO NOTHING
             """,

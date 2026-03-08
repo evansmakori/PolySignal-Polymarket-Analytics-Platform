@@ -338,7 +338,7 @@ def calculate_market_score(market: Dict[str, Any], normalization_params: Optiona
         "expected_value": market.get("expected_value"),
         "kelly_fraction": market.get("kelly_fraction"),
         "liquidity": market.get("liquidity") or market.get("liquidity_clob"),
-        "volatility": market.get("volatility_1w"),
+        "volatility": market.get("volatility") or market.get("volatility_1w"),
         "orderbook_imbalance": market.get("orderbook_imbalance"),
         "spread": market.get("spread"),
         "sentiment_momentum": market.get("sentiment_momentum"),

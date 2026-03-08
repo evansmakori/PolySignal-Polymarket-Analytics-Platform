@@ -9,7 +9,7 @@ Tracks changes in predictive strength scores over time to:
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
-from .database_duckdb import get_pool, TBL_STATS
+from .database import get_pool, TBL_STATS
 from .scoring import calculate_market_score
 
 
@@ -34,7 +34,7 @@ async def get_score_history(
             ) AS rn
         FROM {TBL_STATS}
         WHERE market_id = $1
-          AND snapshot_ts >= NOW() - ($2 || ' days')::INTERVAL
+          AND snapshot_ts >= NOW() - ($2 * INTERVAL '1 day')
     )
     SELECT * FROM snapshots
     WHERE rn = 1
@@ -42,7 +42,7 @@ async def get_score_history(
     """
 
     async with pool.acquire() as conn:
-        rows = await conn.fetch(query, market_id, str(days))
+        rows = await conn.fetch(query, market_id, days)
 
     history = []
     for row in rows:
@@ -119,7 +119,7 @@ async def get_all_markets_score_changes(
     WITH latest AS (
         SELECT market_id, MAX(snapshot_ts) AS latest_ts
         FROM {TBL_STATS}
-        WHERE snapshot_ts >= NOW() - ($1 || ' hours')::INTERVAL
+        WHERE snapshot_ts >= NOW() - ($1 * INTERVAL '1 hour')
         GROUP BY market_id
     )
     SELECT s.*
@@ -128,7 +128,7 @@ async def get_all_markets_score_changes(
     """
 
     async with pool.acquire() as conn:
-        rows = await conn.fetch(query, str(hours + 1))
+        rows = await conn.fetch(query, hours + 1)
 
     changes = []
     for row in rows:
@@ -154,11 +154,11 @@ async def get_top_improving_markets(
 
     query = f"""
     SELECT DISTINCT market_id FROM {TBL_STATS}
-    WHERE snapshot_ts >= NOW() - ($1 || ' days')::INTERVAL
+    WHERE snapshot_ts >= NOW() - ($1 * INTERVAL '1 day')
     """
 
     async with pool.acquire() as conn:
-        rows = await conn.fetch(query, str(days))
+        rows = await conn.fetch(query, days)
 
     market_ids = [r["market_id"] for r in rows]
 

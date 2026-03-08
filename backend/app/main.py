@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import settings
-from .core.database_duckdb import create_pool, close_pool, ensure_tables
+from .core.database import create_pool, close_pool, ensure_tables
 from .api.markets import router as markets_router
 from .api.websocket import router as websocket_router
 from .api.ai import router as ai_router
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     # Startup
     await create_pool()
     await ensure_tables()
-    print("✓ PostgreSQL connection pool initialised")
+    print("✓ PostgreSQL connection pool initialized")
     print("✓ Database tables ensured")
     yield
     # Shutdown
@@ -65,7 +65,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    from .core.database_duckdb import get_pool
+    from .core.database import get_pool
     try:
         pool = await get_pool()
         async with pool.acquire() as conn:
