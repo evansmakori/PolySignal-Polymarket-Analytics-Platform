@@ -1,11 +1,6 @@
 name: polymarket-dashboard
 region: nyc
 
-databases:
-  - name: polymarket-db
-    engine: PG
-    version: "16"
-    production: false
 
 ingress:
   rules:
@@ -51,7 +46,7 @@ services:
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${polymarket-db.DATABASE_URL}
+        type: SECRET
       - key: API_HOST
         value: "0.0.0.0"
         scope: RUN_TIME
