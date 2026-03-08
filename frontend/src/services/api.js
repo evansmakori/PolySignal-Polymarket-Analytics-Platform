@@ -1,11 +1,9 @@
 import axios from 'axios'
 
-// Use relative URL in production (same domain), fallback to localhost for dev
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
-  ? (import.meta.env.VITE_API_BASE_URL.startsWith('http') 
-      ? import.meta.env.VITE_API_BASE_URL 
-      : '')
-  : 'http://localhost:8000'
+// Use relative URL so it works on any domain (production + dev with proxy)
+const API_BASE_URL = import.meta.env.DEV 
+  ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+  : ''
 
 const api = axios.create({
   baseURL: API_BASE_URL,
