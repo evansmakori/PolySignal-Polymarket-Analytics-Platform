@@ -77,8 +77,27 @@ function MarketDetail() {
     }
   }, [marketId])
 
-  // Merge live data on top of fetched data — never replace entirely
-  const displayData = market ? { ...market, ...(liveData || {}) } : null
+  // Normalize API field names and merge live data
+  const displayData = market ? {
+    ...market,
+    ...(liveData || {}),
+    // Normalize field names from DB schema to component expectations
+    ui_yes_price: market.ui_yes_price ?? market.yes_price,
+    volatility_1w: market.volatility_1w ?? market.volatility,
+    slippage_notional_1k: market.slippage_notional_1k ?? market.slippage_bps,
+    degen_risk: market.degen_risk ?? null,
+    volume: market.volume ?? market.volume_total,
+    volume_clob: market.volume_clob ?? null,
+    liquidity_clob: market.liquidity_clob ?? null,
+    yes_token_id: market.yes_token_id ?? market.token_id_yes,
+    no_token_id: market.no_token_id ?? market.token_id_no,
+    // Normalize tags: convert comma-separated string to array
+    tags: Array.isArray(market.tags)
+      ? market.tags
+      : (typeof market.tags === 'string' && market.tags)
+        ? market.tags.split(',').map(t => t.trim()).filter(Boolean)
+        : [],
+  } : null
 
   if (isLoading) {
     return (

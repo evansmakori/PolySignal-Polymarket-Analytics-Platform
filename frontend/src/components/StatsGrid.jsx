@@ -3,10 +3,12 @@ import { formatLargeNumber, formatPercent, getRiskColor } from '../utils/formatt
 
 function StatsGrid({ market }) {
   if (!market) return null
+  const volume = market.volume ?? market.volume_total ?? null
+  const degenRisk = market.degen_risk ?? null
   const stats = [
     {
       label: 'Volume',
-      value: formatLargeNumber(market.volume),
+      value: formatLargeNumber(volume),
       icon: DollarSign,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100 dark:bg-blue-900',
@@ -27,12 +29,12 @@ function StatsGrid({ market }) {
     },
     {
       label: 'Degen Risk',
-      value: market.degen_risk != null ? `${(market.degen_risk * 100).toFixed(0)}%` : 'N/A',
+      value: degenRisk != null ? `${(degenRisk * 100).toFixed(0)}%` : 'N/A',
       icon: AlertCircle,
-      color: getRiskColor(market.degen_risk),
-      bgColor: market.degen_risk == null || market.degen_risk < 0.3
+      color: getRiskColor(degenRisk),
+      bgColor: degenRisk == null || degenRisk < 0.3
         ? 'bg-green-100 dark:bg-green-900' 
-        : market.degen_risk < 0.6 
+        : degenRisk < 0.6 
         ? 'bg-yellow-100 dark:bg-yellow-900' 
         : 'bg-red-100 dark:bg-red-900',
     },
