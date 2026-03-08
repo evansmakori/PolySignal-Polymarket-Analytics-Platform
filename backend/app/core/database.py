@@ -156,6 +156,13 @@ CREATE INDEX IF NOT EXISTS idx_stats_liquidity   ON {TBL_STATS} (liquidity DESC 
 _pool: Optional[asyncpg.Pool] = None
 
 
+async def _set_search_path(conn):
+    """Set search_path to current user's schema + public on every new connection."""
+    current_user = await conn.fetchval("SELECT current_user")
+    await conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{current_user}"')
+    await conn.execute(f'SET search_path TO "{current_user}", public')
+
+
 async def create_pool() -> asyncpg.Pool:
     """Create and store the global asyncpg connection pool."""
     global _pool
@@ -164,7 +171,7 @@ async def create_pool() -> asyncpg.Pool:
         min_size=2,
         max_size=10,
         command_timeout=60,
-        server_settings={"search_path": "public"},
+        init=_set_search_path,
     )
     return _pool
 
@@ -189,26 +196,18 @@ async def close_pool() -> None:
 # ---------------------------------------------------------------------------
 async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
-    # Step 1: Grant permissions using a dedicated connection (committed immediately)
     try:
-        conn1 = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        conn = await asyncpg.connect(dsn=settings.DATABASE_URL)
         try:
-            await conn1.execute("SET search_path TO public")
-            await conn1.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
-            await conn1.execute("GRANT CREATE ON SCHEMA public TO CURRENT_USER")
-            print("✓ Schema permissions granted")
-        except Exception as e:
-            print(f"⚠ Schema grant warning: {e}")
-        finally:
-            await conn1.close()
-    except Exception as e:
-        print(f"⚠ Could not open grant connection: {e}")
+            # Get current user and create their own schema if needed
+            current_user = await conn.fetchval("SELECT current_user")
+            print(f"✓ Connected as: {current_user}")
 
-    # Step 2: Create tables using a fresh connection (sees committed grants)
-    try:
-        conn2 = await asyncpg.connect(dsn=settings.DATABASE_URL)
-        try:
-            await conn2.execute("SET search_path TO public")
+            # Create a schema named after the current user (always allowed)
+            await conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{current_user}"')
+            await conn.execute(f'SET search_path TO "{current_user}", public')
+            print(f"✓ Using schema: {current_user}")
+
             for ddl_name, ddl in [
                 ("orderbook", DDL_ORDERBOOK),
                 ("history", DDL_HISTORY),
@@ -216,7 +215,7 @@ async def ensure_tables() -> None:
                 ("stats", DDL_STATS),
             ]:
                 try:
-                    await conn2.execute(ddl)
+                    await conn.execute(ddl)
                     print(f"✓ Table {ddl_name} ready")
                 except Exception as e:
                     print(f"⚠ Table {ddl_name} failed: {e}")
@@ -225,11 +224,11 @@ async def ensure_tables() -> None:
                 stmt = stmt.strip()
                 if stmt:
                     try:
-                        await conn2.execute(stmt)
+                        await conn.execute(stmt)
                     except Exception:
                         pass
         finally:
-            await conn2.close()
+            await conn.close()
     except Exception as e:
         print(f"⚠ Could not create tables: {e}")
 
