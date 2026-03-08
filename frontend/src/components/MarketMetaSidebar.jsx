@@ -6,19 +6,19 @@ function MarketMetaSidebar({ market }) {
 
   const getStatusIcon = () => {
     if (market.closed) return <XCircle className="w-5 h-5 text-red-500" />
-    if (market.active) return <Activity className="w-5 h-5 text-green-500" />
+    if (market.active !== false) return <Activity className="w-5 h-5 text-green-500" />
     return <Clock3 className="w-5 h-5 text-yellow-500" />
   }
 
   const getStatusText = () => {
     if (market.closed) return 'Closed'
-    if (market.active) return 'Active'
-    return 'Inactive'
+    if (market.active === false) return 'Inactive'
+    return 'Active'
   }
 
   const getStatusColor = () => {
     if (market.closed) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-    if (market.active) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+    if (market.active !== false) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
     return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
   }
 

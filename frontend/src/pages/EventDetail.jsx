@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, TrendingUp, DollarSign, BarChart2 } from 'lucide-react'
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, DollarSign, BarChart2 } from 'lucide-react'
 import { marketsApi } from '../services/api'
 import MarketCard from '../components/MarketCard'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -8,6 +9,7 @@ import { formatLargeNumber } from '../utils/formatters'
 
 function EventDetail() {
   const { eventId } = useParams()
+  const [signalFilter, setSignalFilter] = useState('all')
 
   const { data: markets, isLoading, error } = useQuery({
     queryKey: ['event-markets', eventId],
@@ -16,6 +18,12 @@ function EventDetail() {
   })
 
   const event = markets?.[0]
+
+  const filteredMarkets = markets?.filter(m => {
+    if (signalFilter === 'all') return true
+    if (signalFilter === 'none') return !m.trade_signal || m.trade_signal === 'no_trade'
+    return m.trade_signal === signalFilter
+  }) || []
 
   if (isLoading) return (
     <div className="flex items-center justify-center py-20">
@@ -71,11 +79,49 @@ function EventDetail() {
           </div>
         </div>
 
+        {/* Signal Filters */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'all', label: 'All Markets', icon: null },
+            { key: 'long', label: 'Long', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+            { key: 'short', label: 'Short', icon: <TrendingDown className="w-3.5 h-3.5" /> },
+            { key: 'none', label: 'No Trade', icon: <Minus className="w-3.5 h-3.5" /> },
+          ].map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => setSignalFilter(key)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                signalFilter === key
+                  ? key === 'long' ? 'bg-green-600 text-white'
+                  : key === 'short' ? 'bg-red-600 text-white'
+                  : key === 'none' ? 'bg-gray-600 text-white'
+                  : 'bg-primary-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {icon}
+              {label}
+              <span className="ml-1 text-xs opacity-75">
+                ({key === 'all' ? markets?.length : markets?.filter(m =>
+                  key === 'none'
+                    ? !m.trade_signal || m.trade_signal === 'no_trade'
+                    : m.trade_signal === key
+                ).length || 0})
+              </span>
+            </button>
+          ))}
+        </div>
+
         {/* Markets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {markets?.map(market => (
+          {filteredMarkets.map(market => (
             <MarketCard key={market.market_id} market={market} />
           ))}
+          {filteredMarkets.length === 0 && (
+            <div className="col-span-3 text-center py-12 text-gray-500 dark:text-gray-400">
+              No {signalFilter === 'all' ? '' : signalFilter} markets found.
+            </div>
+          )}
         </div>
       </div>
     </ErrorBoundary>
