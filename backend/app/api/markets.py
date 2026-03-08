@@ -531,27 +531,41 @@ async def list_events(
     from ..core.database import get_pool
     pool = await get_pool()
     async with pool.acquire() as conn:
-        where = "WHERE event_id IS NOT NULL"
-        params = []
         if search:
-            where += " AND (event_title ILIKE $1 OR title ILIKE $1)"
-            params.append(f"%{search}%")
-        rows = await conn.fetch(f"""
-            SELECT 
-                event_id,
-                event_title,
-                event_slug,
-                COUNT(*) as market_count,
-                SUM(volume_total) as total_volume,
-                SUM(liquidity) as total_liquidity,
-                MAX(snapshot_ts) as last_updated,
-                MAX(predictive_score) as best_score
-            FROM polymarket_market_stats
-            {where}
-            GROUP BY event_id, event_title, event_slug
-            ORDER BY total_volume DESC NULLS LAST
-            LIMIT ${'$'+str(len(params)+1)}
-        """, *params, limit)
+            rows = await conn.fetch("""
+                SELECT 
+                    event_id,
+                    event_title,
+                    event_slug,
+                    COUNT(*) as market_count,
+                    SUM(volume_total) as total_volume,
+                    SUM(liquidity) as total_liquidity,
+                    MAX(snapshot_ts) as last_updated,
+                    MAX(predictive_score) as best_score
+                FROM polymarket_market_stats
+                WHERE event_id IS NOT NULL
+                AND (event_title ILIKE $1 OR title ILIKE $1)
+                GROUP BY event_id, event_title, event_slug
+                ORDER BY total_volume DESC NULLS LAST
+                LIMIT $2
+            """, f"%{search}%", limit)
+        else:
+            rows = await conn.fetch("""
+                SELECT 
+                    event_id,
+                    event_title,
+                    event_slug,
+                    COUNT(*) as market_count,
+                    SUM(volume_total) as total_volume,
+                    SUM(liquidity) as total_liquidity,
+                    MAX(snapshot_ts) as last_updated,
+                    MAX(predictive_score) as best_score
+                FROM polymarket_market_stats
+                WHERE event_id IS NOT NULL
+                GROUP BY event_id, event_title, event_slug
+                ORDER BY total_volume DESC NULLS LAST
+                LIMIT $1
+            """, limit)
         return [dict(r) for r in rows]
 
 
