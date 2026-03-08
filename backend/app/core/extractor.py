@@ -220,6 +220,10 @@ def assemble_market_stats(
         "title": title,
         "category": category,
 
+        "event_id": str(event.get('id', '')) if event else None,
+        "event_title": event.get('title', '') if event else None,
+        "event_slug": event.get('slug', '') if event else None,
+
         "yes_token_id": yes_token_id,
         "no_token_id": no_token_id,
 

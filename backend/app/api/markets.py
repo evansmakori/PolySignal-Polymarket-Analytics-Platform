@@ -522,6 +522,56 @@ async def get_market_trades(
     return [dict(r) for r in rows]
 
 
+@router.get("/events", response_model=List[Dict[str, Any]])
+async def list_events(
+    limit: int = Query(50, ge=1, le=200),
+    search: str = Query(None),
+):
+    """List all extracted events grouped by event_id."""
+    from ..core.database import get_pool
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        where = "WHERE event_id IS NOT NULL"
+        params = []
+        if search:
+            where += " AND (event_title ILIKE $1 OR title ILIKE $1)"
+            params.append(f"%{search}%")
+        rows = await conn.fetch(f"""
+            SELECT 
+                event_id,
+                event_title,
+                event_slug,
+                COUNT(*) as market_count,
+                SUM(volume_total) as total_volume,
+                SUM(liquidity) as total_liquidity,
+                MAX(snapshot_ts) as last_updated,
+                MAX(predictive_score) as best_score
+            FROM polymarket_market_stats
+            {where}
+            GROUP BY event_id, event_title, event_slug
+            ORDER BY total_volume DESC NULLS LAST
+            LIMIT ${'$'+str(len(params)+1)}
+        """, *params, limit)
+        return [dict(r) for r in rows]
+
+
+@router.get("/events/{event_id}/markets", response_model=List[Dict[str, Any]])
+async def get_event_markets(event_id: str):
+    """Get all markets for a specific event."""
+    from ..core.database import get_pool
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT DISTINCT ON (market_id) *
+            FROM polymarket_market_stats
+            WHERE event_id = $1
+            ORDER BY market_id, snapshot_ts DESC
+        """, event_id)
+        if not rows:
+            raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
+        return [dict(r) for r in rows]
+
+
 @router.get("/{market_id}", response_model=Dict[str, Any])
 async def get_market(market_id: str):
     """

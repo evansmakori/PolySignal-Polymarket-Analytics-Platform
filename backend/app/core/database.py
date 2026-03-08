@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS {TBL_STATS} (
     start_date           TIMESTAMPTZ,
     creation_date        TIMESTAMPTZ,
     description          TEXT,
+    event_id             TEXT,
+    event_title          TEXT,
+    event_slug           TEXT,
     tags                 TEXT,
     resolution_source    TEXT,
     comment_count        INTEGER,
@@ -245,6 +248,9 @@ async def ensure_tables() -> None:
             for alter_sql in [
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS degen_risk DOUBLE PRECISION",
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS liquidity_score DOUBLE PRECISION",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS event_id TEXT",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS event_title TEXT",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS event_slug TEXT",
             ]:
                 try:
                     await conn.execute(alter_sql)
@@ -379,7 +385,7 @@ async def upsert_market_stats(stats: dict) -> None:
                 market_id, snapshot_ts,
                 token_id_yes, token_id_no,
                 title, category, end_date, start_date, creation_date,
-                description, tags, resolution_source, comment_count, competitive,
+                description, event_id, event_title, event_slug, tags, resolution_source, comment_count, competitive,
                 yes_price, no_price, best_bid, best_ask, spread, mid_price,
                 last_trade_price, last_trade_size, last_trade_ts,
                 volume_24h, volume_total, volume_1wk, volume_1mo, volume_1yr,
@@ -398,7 +404,7 @@ async def upsert_market_stats(stats: dict) -> None:
                 $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
                 $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
                 $41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-                $51,$52,$53
+                $51,$52,$53,$54,$55,$56
             )
             ON CONFLICT (market_id, snapshot_ts) DO UPDATE SET
                 token_id_yes        = EXCLUDED.token_id_yes,
@@ -409,6 +415,9 @@ async def upsert_market_stats(stats: dict) -> None:
                 start_date          = EXCLUDED.start_date,
                 creation_date       = EXCLUDED.creation_date,
                 description         = EXCLUDED.description,
+                event_id            = EXCLUDED.event_id,
+                event_title         = EXCLUDED.event_title,
+                event_slug          = EXCLUDED.event_slug,
                 tags                = EXCLUDED.tags,
                 resolution_source   = EXCLUDED.resolution_source,
                 comment_count       = EXCLUDED.comment_count,
@@ -466,6 +475,9 @@ async def upsert_market_stats(stats: dict) -> None:
             _to_ts(stats.get("start_date")),
             _to_ts(stats.get("creation_date") or stats.get("created_at")),
             stats.get("description"),
+            stats.get('event_id'),
+            stats.get('event_title'),
+            stats.get('event_slug'),
             # tags stored as JSON string if it's a list
             (str(stats["tags"]) if isinstance(stats.get("tags"), list) else stats.get("tags")),
             stats.get("resolution_source"),

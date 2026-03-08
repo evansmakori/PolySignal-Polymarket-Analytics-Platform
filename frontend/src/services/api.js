@@ -153,6 +153,17 @@ export const marketsApi = {
     })
     return response.data
   },
+
+  // Get events
+  getEvents: (params = {}) => {
+    const query = new URLSearchParams()
+    if (params.search) query.append('search', params.search)
+    if (params.limit) query.append('limit', params.limit)
+    return api.get(`/api/markets/events?${query}`).then(r => r.data)
+  },
+
+  // Get markets for an event
+  getEventMarkets: (eventId) => api.get(`/api/markets/events/${eventId}/markets`).then(r => r.data),
 }
 
 // AI Features API
