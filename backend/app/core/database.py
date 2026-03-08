@@ -207,25 +207,23 @@ async def close_pool() -> None:
 async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
     try:
-        conn = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        # Step 1: Grant permissions in one connection and close it
+        conn1 = await asyncpg.connect(dsn=settings.DATABASE_URL)
         try:
-            current_user = await conn.fetchval("SELECT current_user")
+            current_user = await conn1.fetchval("SELECT current_user")
             print(f"✓ Connected as: {current_user}")
+            await conn1.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
+            await conn1.execute(f'GRANT CREATE ON SCHEMA public TO "{current_user}"')
+            print("✓ Granted schema permissions")
+        except Exception as e:
+            print(f"⚠ Grant warning: {e}")
+        finally:
+            await conn1.close()
 
-            # List all schemas and their owners for debugging
-            schemas = await conn.fetch(
-                "SELECT schema_name, schema_owner FROM information_schema.schemata"
-            )
-            for s in schemas:
-                print(f"  schema: {s['schema_name']} owner: {s['schema_owner']}")
-
-            # Try to grant using doadmin if we are doadmin
-            try:
-                await conn.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
-                print("✓ Granted public schema to current user")
-            except Exception as e:
-                print(f"⚠ Grant failed: {e}")
-
+        # Step 2: Open a fresh connection to create tables (picks up new grants)
+        conn2 = await asyncpg.connect(dsn=settings.DATABASE_URL)
+        try:
+            await conn2.execute("SET search_path TO public")
             for ddl_name, ddl in [
                 ("orderbook", DDL_ORDERBOOK),
                 ("history", DDL_HISTORY),
@@ -233,7 +231,7 @@ async def ensure_tables() -> None:
                 ("stats", DDL_STATS),
             ]:
                 try:
-                    await conn.execute(ddl)
+                    await conn2.execute(ddl)
                     print(f"✓ Table {ddl_name} ready")
                 except Exception as e:
                     print(f"⚠ Table {ddl_name} failed: {e}")
@@ -242,11 +240,11 @@ async def ensure_tables() -> None:
                 stmt = stmt.strip()
                 if stmt:
                     try:
-                        await conn.execute(stmt)
+                        await conn2.execute(stmt)
                     except Exception:
                         pass
         finally:
-            await conn.close()
+            await conn2.close()
     except Exception as e:
         print(f"⚠ Could not create tables: {e}")
 
