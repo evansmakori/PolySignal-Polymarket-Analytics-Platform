@@ -2,6 +2,7 @@
 PostgreSQL database connection and schema management.
 Uses asyncpg connection pool for async FastAPI compatibility.
 """
+import asyncio
 import asyncpg
 import datetime
 from typing import Optional
@@ -174,15 +175,28 @@ async def _set_search_path(conn):
 
 
 async def create_pool() -> asyncpg.Pool:
-    """Create and store the global asyncpg connection pool."""
+    """Create and store the global asyncpg connection pool with retry logic."""
     global _pool
-    _pool = await asyncpg.create_pool(
-        dsn=settings.DATABASE_URL,
-        min_size=2,
-        max_size=10,
-        command_timeout=60,
-        init=_set_search_path,
-    )
+    max_retries = 10
+    retry_delay = 5  # seconds
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            _pool = await asyncpg.create_pool(
+                dsn=settings.DATABASE_URL,
+                min_size=2,
+                max_size=10,
+                command_timeout=60,
+                init=_set_search_path,
+            )
+            print(f"✓ Database pool created on attempt {attempt}")
+            return _pool
+        except Exception as e:
+            print(f"⚠ DB connection attempt {attempt}/{max_retries} failed: {e}")
+            if attempt < max_retries:
+                await asyncio.sleep(retry_delay)
+            else:
+                raise
     return _pool
 
 
