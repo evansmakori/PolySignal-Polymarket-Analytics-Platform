@@ -3,10 +3,42 @@ Main extraction logic - assembles market stats from all data sources
 """
 import math
 import asyncio
+import time
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
+
+# ─── In-memory TTL cache ───────────────────────────────────────────────────────
+# Key: normalized URL string, Value: (result_dict, timestamp)
+_extraction_cache: Dict[str, tuple] = {}
+_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _cache_key(url: str) -> str:
+    """Normalize URL to a consistent cache key."""
+    return url.strip().rstrip("/").lower()
+
+
+def _cache_get(url: str):
+    """Return cached result if fresh, else None."""
+    key = _cache_key(url)
+    if key in _extraction_cache:
+        result, ts = _extraction_cache[key]
+        if time.time() - ts < _CACHE_TTL_SECONDS:
+            print(f"✓ Cache hit for {key} (age: {int(time.time()-ts)}s)")
+            return result
+        else:
+            del _extraction_cache[key]
+    return None
+
+
+def _cache_set(url: str, result: dict):
+    """Store result in in-memory cache."""
+    key = _cache_key(url)
+    _extraction_cache[key] = (result, time.time())
+    print(f"✓ Cached extraction for {key}")
+# ──────────────────────────────────────────────────────────────────────────────
 
 from .polymarket import (
     resolve_markets_from_url,
@@ -302,12 +334,57 @@ async def extract_from_url(
     if base_rate is None:
         base_rate = settings.BASE_RATE
 
+    # ── Check in-memory cache first (fastest) ──────────────────────────────
+    original_url = url if isinstance(url, str) else None
+    if original_url:
+        cached = _cache_get(original_url)
+        if cached:
+            if progress_callback:
+                progress_callback("Loaded from cache (instant)!")
+            return {**cached, "from_cache": True, "cache_type": "memory"}
+
     if isinstance(url, tuple):
         # Pre-resolved markets passed directly (url, event_obj) tuple
         markets, event_obj = url
     else:
         markets, event_obj = resolve_markets_from_url(url)
     asof = _utc_now() if settings.USE_UTC else datetime.now()
+
+    # ── Check DB cache (fresh data < 5 min old) ────────────────────────────
+    if original_url and markets:
+        from .database import get_pool
+        try:
+            pool = await get_pool()
+            async with pool.acquire() as conn:
+                market_ids = [
+                    str(m.get("id") or m.get("marketId") or m.get("conditionId"))
+                    for m in markets
+                ]
+                # Check if all markets have fresh data in DB (< 5 min old)
+                fresh_count = await conn.fetchval(
+                    """SELECT COUNT(*) FROM polymarket_market_stats
+                       WHERE market_id = ANY($1::text[])
+                       AND snapshot_ts > NOW() - INTERVAL '5 minutes'""",
+                    market_ids
+                )
+                if fresh_count and fresh_count >= len(markets):
+                    print(f"✓ DB cache hit: {fresh_count} fresh markets found")
+                    if progress_callback:
+                        progress_callback("Loaded from database cache (fast)!")
+                    result = {
+                        "success": True,
+                        "markets_processed": len(markets),
+                        "message": f"Loaded {len(markets)} market(s) from cache",
+                        "market_ids": market_ids,
+                        "from_cache": True,
+                        "cache_type": "database",
+                    }
+                    if original_url:
+                        _cache_set(original_url, result)
+                    return result
+        except Exception as e:
+            print(f"⚠ DB cache check failed: {e}")
+    # ──────────────────────────────────────────────────────────────────────
 
     # Collect all token IDs needed across all markets
     token_meta = {}  # token_id -> (market, side)
@@ -394,9 +471,16 @@ async def extract_from_url(
     executor.shutdown(wait=False)
     market_ids = [stats["market_id"] for stats in all_stats_rows]
 
-    return {
+    result = {
         "success": True,
         "markets_processed": len(markets),
         "message": f"Extracted {len(markets)} market(s)",
         "market_ids": market_ids,
+        "from_cache": False,
     }
+
+    # Store in memory cache for next time
+    if original_url:
+        _cache_set(original_url, result)
+
+    return result

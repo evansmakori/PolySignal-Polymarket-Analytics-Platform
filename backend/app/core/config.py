@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Polymarket API
     GAMMA_BASE: str = "https://gamma-api.polymarket.com"
     CLOB_BASE: str = "https://clob.polymarket.com"
-    REQUEST_TIMEOUT: int = 30
+    REQUEST_TIMEOUT: int = 10
     MAX_RETRIES: int = 3
     RETRY_BACKOFF_SEC: int = 2
 
