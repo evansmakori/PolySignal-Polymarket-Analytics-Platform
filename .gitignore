@@ -59,3 +59,4 @@ Thumbs.db
 
 # DigitalOcean
 .do/app.yaml.bak
+.do/app.yaml
