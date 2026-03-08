@@ -218,14 +218,18 @@ export const getAnomalyDetection = aiApi.getAnomalyDetection
 export const getTradingSignal = aiApi.getTradingSignal
 
 // WebSocket connection helper
+const getWsBaseUrl = () => {
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  // Automatically convert http -> ws and https -> wss
+  return apiBase.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+}
+
 export const createWebSocket = (marketId) => {
-  const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000'
-  return new WebSocket(`${WS_BASE_URL}/ws/markets/${marketId}`)
+  return new WebSocket(`${getWsBaseUrl()}/ws/markets/${marketId}`)
 }
 
 export const createAllMarketsWebSocket = () => {
-  const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:8000'
-  return new WebSocket(`${WS_BASE_URL}/ws/markets`)
+  return new WebSocket(`${getWsBaseUrl()}/ws/markets`)
 }
 
 export default api
