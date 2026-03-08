@@ -13,7 +13,7 @@ from ..models.market import (
 from ..services.market_service import MarketService
 from ..core.extractor import extract_from_url
 
-router = APIRouter(prefix="/api/markets", tags=["markets"])
+router = APIRouter(prefix="/markets", tags=["markets"])
 
 
 @router.get("/", response_model=List[Dict[str, Any]])

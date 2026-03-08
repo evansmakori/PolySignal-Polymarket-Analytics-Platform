@@ -20,7 +20,7 @@ from ..services.market_service import MarketService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/ai", tags=["AI Features"])
+router = APIRouter(prefix="/ai", tags=["AI Features"])
 
 # Initialize AI models (singleton instances)
 price_predictor = PricePredictor()
