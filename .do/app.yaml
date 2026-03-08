@@ -46,7 +46,7 @@ services:
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: "${db-postgresql-nyc1-60694.DATABASE_URL}"
+        type: SECRET
       - key: API_HOST
         value: "0.0.0.0"
         scope: RUN_TIME
@@ -96,5 +96,5 @@ services:
     instance_count: 1
     envs:
       - key: VITE_API_BASE_URL
-        value: "${APP_URL}"
+        value: "https://polymarket-dashboard-6jj9o.ondigitalocean.app"
         scope: BUILD_TIME
