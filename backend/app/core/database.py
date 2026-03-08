@@ -212,16 +212,19 @@ async def ensure_tables() -> None:
             current_user = await conn.fetchval("SELECT current_user")
             print(f"✓ Connected as: {current_user}")
 
-            # Find a schema owned by this user
+            # List all schemas and their owners for debugging
             schemas = await conn.fetch(
-                "SELECT schema_name FROM information_schema.schemata WHERE schema_owner = current_user"
+                "SELECT schema_name, schema_owner FROM information_schema.schemata"
             )
-            if schemas:
-                schema_name = schemas[0]['schema_name']
-                await conn.execute(f'SET search_path TO "{schema_name}", public')
-                print(f"✓ Using schema: {schema_name}")
-            else:
-                print("⚠ No user-owned schema found, using public")
+            for s in schemas:
+                print(f"  schema: {s['schema_name']} owner: {s['schema_owner']}")
+
+            # Try to grant using doadmin if we are doadmin
+            try:
+                await conn.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
+                print("✓ Granted public schema to current user")
+            except Exception as e:
+                print(f"⚠ Grant failed: {e}")
 
             for ddl_name, ddl in [
                 ("orderbook", DDL_ORDERBOOK),
