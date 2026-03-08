@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, DollarSign, BarChart2 } from 'lucide-react'
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, DollarSign, BarChart2, ChevronDown, Droplets } from 'lucide-react'
 import { marketsApi } from '../services/api'
 import MarketCard from '../components/MarketCard'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -10,6 +10,20 @@ import { formatLargeNumber } from '../utils/formatters'
 function EventDetail() {
   const { eventId } = useParams()
   const [signalFilter, setSignalFilter] = useState('all')
+  const [liquidityFilter, setLiquidityFilter] = useState('all')
+  const [signalDropdownOpen, setSignalDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setSignalDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const { data: markets, isLoading, error } = useQuery({
     queryKey: ['event-markets', eventId],
@@ -20,10 +34,32 @@ function EventDetail() {
   const event = markets?.[0]
 
   const filteredMarkets = markets?.filter(m => {
-    if (signalFilter === 'all') return true
-    if (signalFilter === 'none') return !m.trade_signal || m.trade_signal === 'no_trade'
-    return m.trade_signal === signalFilter
+    // Signal filter
+    if (signalFilter !== 'all') {
+      if (signalFilter === 'none' && m.trade_signal && m.trade_signal !== 'no_trade') return false
+      if (signalFilter !== 'none' && m.trade_signal !== signalFilter) return false
+    }
+    // Liquidity filter
+    const liq = m.liquidity || 0
+    if (liquidityFilter === 'high' && liq < 100000) return false
+    if (liquidityFilter === 'medium' && (liq < 10000 || liq >= 100000)) return false
+    if (liquidityFilter === 'low' && liq >= 10000) return false
+    return true
   }) || []
+
+  const signalLabels = {
+    all: 'Signal: All',
+    long: '📈 Long',
+    short: '📉 Short',
+    none: '⏸ No Trade',
+  }
+
+  const liquidityLabels = {
+    all: 'Liquidity: All',
+    high: '💧 High (>$100K)',
+    medium: '💧 Medium ($10K-$100K)',
+    low: '💧 Low (<$10K)',
+  }
 
   if (isLoading) return (
     <div className="flex items-center justify-center py-20">
@@ -79,37 +115,67 @@ function EventDetail() {
           </div>
         </div>
 
-        {/* Signal Filters */}
-        <div className="flex flex-wrap gap-2">
-          {[
-            { key: 'all', label: 'All Markets', icon: null },
-            { key: 'long', label: 'Long', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-            { key: 'short', label: 'Short', icon: <TrendingDown className="w-3.5 h-3.5" /> },
-            { key: 'none', label: 'No Trade', icon: <Minus className="w-3.5 h-3.5" /> },
-          ].map(({ key, label, icon }) => (
+        {/* Filters Row */}
+        <div className="flex flex-wrap gap-3 items-center">
+          
+          {/* Signal Dropdown */}
+          <div className="relative" ref={dropdownRef}>
             <button
-              key={key}
-              onClick={() => setSignalFilter(key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                signalFilter === key
-                  ? key === 'long' ? 'bg-green-600 text-white'
-                  : key === 'short' ? 'bg-red-600 text-white'
-                  : key === 'none' ? 'bg-gray-600 text-white'
-                  : 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                signalFilter !== 'all'
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
-              {icon}
-              {label}
-              <span className="ml-1 text-xs opacity-75">
-                ({key === 'all' ? markets?.length : markets?.filter(m =>
-                  key === 'none'
-                    ? !m.trade_signal || m.trade_signal === 'no_trade'
-                    : m.trade_signal === key
-                ).length || 0})
-              </span>
+              {signalLabels[signalFilter]}
+              <ChevronDown className="w-4 h-4" />
             </button>
-          ))}
+            {signalDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                {Object.entries(signalLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => { setSignalFilter(key); setSignalDropdownOpen(false) }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center first:rounded-t-lg last:rounded-b-lg ${
+                      signalFilter === key ? 'text-primary-600 font-medium' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {label}
+                    <span className="text-xs text-gray-400">
+                      ({key === 'all' ? markets?.length :
+                        markets?.filter(m => key === 'none'
+                          ? !m.trade_signal || m.trade_signal === 'no_trade'
+                          : m.trade_signal === key
+                        ).length || 0})
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Liquidity Filter */}
+          <div className="flex gap-2">
+            {Object.entries(liquidityLabels).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setLiquidityFilter(key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  liquidityFilter === key
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Result count */}
+          <span className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
+            Showing {filteredMarkets.length} of {markets?.length || 0} markets
+          </span>
         </div>
 
         {/* Markets Grid */}
