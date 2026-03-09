@@ -378,20 +378,35 @@ def enrich_market_from_event(market: Dict[str, Any], event: Dict[str, Any]) -> D
 
 def search_markets(query: str, limit: int = 20) -> List[Dict[str, Any]]:
     """Search markets by keyword using Gamma API."""
-    r = _retry_get(
-        f"{settings.GAMMA_BASE}/markets",
-        params={"search": query, "limit": limit, "active": "true", "order": "volume24hr", "ascending": "false"}
-    )
-    return r.json() if r.content else []
+    # Try multiple search parameters since Gamma API is inconsistent
+    for param in ["question", "slug"]:
+        try:
+            r = _retry_get(
+                f"{settings.GAMMA_BASE}/markets",
+                params={param: query, "limit": limit, "active": "true", "closed": "false", "order": "volume24hr", "ascending": "false"}
+            )
+            results = r.json() if r.content else []
+            if results:
+                return results
+        except Exception:
+            continue
+    return []
 
 
 def search_events(query: str, limit: int = 10) -> List[Dict[str, Any]]:
     """Search events by keyword using Gamma API."""
-    r = _retry_get(
-        f"{settings.GAMMA_BASE}/events",
-        params={"search": query, "limit": limit, "active": "true", "order": "volume24hr", "ascending": "false"}
-    )
-    return r.json() if r.content else []
+    for param in ["title", "slug"]:
+        try:
+            r = _retry_get(
+                f"{settings.GAMMA_BASE}/events",
+                params={param: query, "limit": limit, "active": "true", "closed": "false", "order": "volume24hr", "ascending": "false"}
+            )
+            results = r.json() if r.content else []
+            if results:
+                return results
+        except Exception:
+            continue
+    return []
 
 
 def fetch_recent_trades(token_id: str, limit: int = 20) -> List[Dict[str, Any]]:
