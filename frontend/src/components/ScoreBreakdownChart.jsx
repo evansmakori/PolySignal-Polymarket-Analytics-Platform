@@ -108,7 +108,7 @@ function ScoreBreakdownChart({ marketId }) {
     <div className="card">
       <div className="flex items-center gap-2 mb-6">
         <BarChart3 className="w-5 h-5 text-primary-600" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Score Breakdown
         </h3>
       </div>
@@ -117,10 +117,10 @@ function ScoreBreakdownChart({ marketId }) {
       <div className="mb-6 p-4 rounded-lg bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+            <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
               Predictive Strength Score
             </div>
-            <div className={`text-4xl font-bold ${getScoreColor(score)}`}>
+            <div className={`text-6xl font-bold ${getScoreColor(score)}`}>
               {score.toFixed(1)}
               <span className="text-2xl opacity-75">/100</span>
             </div>
@@ -142,12 +142,12 @@ function ScoreBreakdownChart({ marketId }) {
       <div className="space-y-4">
         {components.map((component) => (
           <div key={component.key} className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-base">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-900 dark:text-white">
                   {component.name}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   ({component.weight}% weight)
                 </span>
               </div>
@@ -169,7 +169,7 @@ function ScoreBreakdownChart({ marketId }) {
               />
             </div>
 
-            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
               <span>Normalized: {((component.normalized || 0) * 100).toFixed(1)}%</span>
               <span>Contribution: {score > 0 ? (((component.weighted || 0) / score) * 100).toFixed(1) : '0.0'}% of total</span>
             </div>
@@ -179,7 +179,7 @@ function ScoreBreakdownChart({ marketId }) {
 
       {/* Legend */}
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
           <p><strong>Normalized:</strong> Each metric scaled to 0-100%</p>
           <p><strong>Contribution:</strong> Normalized × Weight = Points added to total score</p>
         </div>

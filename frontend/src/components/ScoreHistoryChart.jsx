@@ -68,7 +68,7 @@ function ScoreHistoryChart({ marketId }) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <LineChart className="w-5 h-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
             Score History
           </h3>
         </div>
@@ -77,7 +77,7 @@ function ScoreHistoryChart({ marketId }) {
         <select
           value={days}
           onChange={(e) => setDays(parseInt(e.target.value))}
-          className="input text-sm"
+          className="input text-base"
         >
           <option value={7}>7 days</option>
           <option value={14}>14 days</option>
@@ -91,26 +91,26 @@ function ScoreHistoryChart({ marketId }) {
         <div className="mb-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Trend</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Trend</div>
               <div className={`flex items-center gap-1 font-semibold ${getTrendColor(trend)}`}>
                 {getTrendIcon(trend)}
                 <span className="capitalize">{trend.direction}</span>
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Change</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Change</div>
               <div className={`font-semibold ${getTrendColor(trend)}`}>
                 {trend.change > 0 ? '+' : ''}{trend.change.toFixed(1)} pts
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Current</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Current</div>
               <div className="font-semibold text-gray-900 dark:text-white">
                 {trend.last_score.toFixed(1)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Volatility</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Volatility</div>
               <div className="font-semibold text-gray-900 dark:text-white">
                 {trend.volatility.toFixed(1)}
               </div>
@@ -124,7 +124,7 @@ function ScoreHistoryChart({ marketId }) {
         {/* Y-axis labels and chart area */}
         <div className="flex gap-2">
           {/* Y-axis */}
-          <div className="flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400 w-10 text-right">
+          <div className="flex flex-col justify-between text-sm text-gray-500 dark:text-gray-400 w-10 text-right">
             <span>{maxScore.toFixed(0)}</span>
             <span>{((maxScore + minScore) / 2).toFixed(0)}</span>
             <span>{minScore.toFixed(0)}</span>
@@ -190,7 +190,7 @@ function ScoreHistoryChart({ marketId }) {
         </div>
 
         {/* X-axis labels */}
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 ml-12">
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 ml-12">
           <span>{new Date(validHistory[0].timestamp).toLocaleDateString()}</span>
           <span>{new Date(validHistory[validHistory.length - 1].timestamp).toLocaleDateString()}</span>
         </div>
@@ -198,7 +198,7 @@ function ScoreHistoryChart({ marketId }) {
 
       {/* Stats */}
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-3 gap-4 text-center text-sm">
+        <div className="grid grid-cols-3 gap-4 text-center text-base">
           <div>
             <div className="text-gray-500 dark:text-gray-400 mb-1">Highest</div>
             <div className="font-semibold text-gray-900 dark:text-white">

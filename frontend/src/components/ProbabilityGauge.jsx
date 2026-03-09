@@ -52,7 +52,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 text-center">
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
         {title}
       </h3>
 
@@ -98,13 +98,13 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
           <div className={`text-5xl font-bold ${colors.text} transition-colors duration-500`}>
             {displayProb.toFixed(1)}%
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-base text-gray-500 dark:text-gray-400 mt-1">
             Probability
           </div>
           
           {/* Change Indicator */}
           {hasChange && Math.abs(change) > 0.1 && (
-            <div className={`flex items-center gap-1 mt-2 text-sm font-semibold ${
+            <div className={`flex items-center gap-1 mt-2 text-base font-semibold ${
               isIncrease ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             }`}>
               {isIncrease ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
@@ -117,7 +117,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
       {/* Color Scale Legend */}
       <div className="mt-6">
         <div className="h-3 rounded-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"></div>
-        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mt-1">
           <span>0%</span>
           <span>25%</span>
           <span>50%</span>
@@ -128,7 +128,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
 
       {/* Interpretation */}
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <div className="text-sm">
+        <div className="text-base">
           <div className="font-semibold text-gray-900 dark:text-white mb-1">
             Market Sentiment:
           </div>
@@ -143,7 +143,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
 
       {/* Thermometer Style Alternative (Vertical) */}
       <div className="mt-6">
-        <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Confidence Thermometer
         </div>
         <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
           </div>
 
           {/* Labels */}
-          <div className="flex-1 flex flex-col justify-between h-48 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex-1 flex flex-col justify-between h-48 text-sm text-gray-600 dark:text-gray-400">
             <span className="font-semibold text-green-600 dark:text-green-400">100% Certain</span>
             <span>75%</span>
             <span className="font-semibold">50% Toss-up</span>
@@ -180,17 +180,17 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
 
       {/* Probability Ranges */}
       <div className="mt-6 space-y-2">
-        <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <div className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Probability Bands
         </div>
-        <div className="grid grid-cols-4 gap-2 text-xs">
+        <div className="grid grid-cols-4 gap-2 text-sm">
           <div className={`p-2 rounded text-center font-medium ${
             displayProb >= 0 && displayProb < 25 
               ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-2 ring-red-500' 
               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
           }`}>
             <div>0-25%</div>
-            <div className="text-xs opacity-75">Very Low</div>
+            <div className="text-sm opacity-75">Very Low</div>
           </div>
           <div className={`p-2 rounded text-center font-medium ${
             displayProb >= 25 && displayProb < 50 
@@ -198,7 +198,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
           }`}>
             <div>25-50%</div>
-            <div className="text-xs opacity-75">Low</div>
+            <div className="text-sm opacity-75">Low</div>
           </div>
           <div className={`p-2 rounded text-center font-medium ${
             displayProb >= 50 && displayProb < 75 
@@ -206,7 +206,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
           }`}>
             <div>50-75%</div>
-            <div className="text-xs opacity-75">High</div>
+            <div className="text-sm opacity-75">High</div>
           </div>
           <div className={`p-2 rounded text-center font-medium ${
             displayProb >= 75 
@@ -214,7 +214,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
           }`}>
             <div>75-100%</div>
-            <div className="text-xs opacity-75">Very High</div>
+            <div className="text-sm opacity-75">Very High</div>
           </div>
         </div>
       </div>

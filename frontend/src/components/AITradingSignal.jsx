@@ -129,8 +129,8 @@ const AITradingSignal = ({ marketId }) => {
             <SignalIcon className={`w-6 h-6 ${config.textColor}`} />
           </div>
           <div>
-            <h3 className={`text-2xl font-bold ${config.textColor}`}>{action}</h3>
-            <p className="text-xs text-gray-600">AI Trading Signal</p>
+            <h3 className={`text-4xl font-bold ${config.textColor}`}>{action}</h3>
+            <p className="text-sm text-gray-600">AI Trading Signal</p>
           </div>
         </div>
         <Zap className="w-5 h-5 text-purple-600" title="AI Powered" />
@@ -140,8 +140,8 @@ const AITradingSignal = ({ marketId }) => {
       <div className="grid grid-cols-3 gap-3 mb-4">
         {/* Confidence */}
         <div className="bg-white/70 p-3 rounded text-center">
-          <p className="text-xs text-gray-600">Confidence</p>
-          <p className="text-lg font-bold text-blue-600">
+          <p className="text-sm text-gray-600">Confidence</p>
+          <p className="text-xl font-bold text-blue-600">
             {(confidence * 100).toFixed(0)}%
           </p>
           <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
@@ -154,9 +154,9 @@ const AITradingSignal = ({ marketId }) => {
 
         {/* Risk Level */}
         <div className="bg-white/70 p-3 rounded text-center">
-          <p className="text-xs text-gray-600">Risk Level</p>
+          <p className="text-sm text-gray-600">Risk Level</p>
           <p
-            className={`text-sm font-bold ${riskConfig.badgeText}`}
+            className={`text-base font-bold ${riskConfig.badgeText}`}
           >
             {riskLevel}
           </p>
@@ -164,14 +164,14 @@ const AITradingSignal = ({ marketId }) => {
 
         {/* Position Size */}
         <div className="bg-white/70 p-3 rounded text-center">
-          <p className="text-xs text-gray-600">Position Size</p>
-          <p className="text-sm font-bold text-gray-700">{positionSize}</p>
+          <p className="text-sm text-gray-600">Position Size</p>
+          <p className="text-base font-bold text-gray-700">{positionSize}</p>
         </div>
       </div>
 
       {/* Entry/Stop/Profit */}
       {signal.entry_price !== null && (
-        <div className="bg-white/70 p-4 rounded-lg mb-4 space-y-2 text-sm">
+        <div className="bg-white/70 p-4 rounded-lg mb-4 space-y-2 text-base">
           <p className="font-semibold text-gray-800 mb-2">Price Targets</p>
           
           <div className="flex justify-between">
@@ -204,10 +204,10 @@ const AITradingSignal = ({ marketId }) => {
       {/* Reasoning Bullet Points */}
       {signal.reasoning && signal.reasoning.length > 0 && (
         <div className="mb-4">
-          <p className="text-sm font-semibold text-gray-800 mb-2">Analysis:</p>
+          <p className="text-base font-semibold text-gray-800 mb-2">Analysis:</p>
           <ul className="space-y-1.5">
             {signal.reasoning.map((reason, idx) => (
-              <li key={idx} className="flex items-start space-x-2 text-sm text-gray-700">
+              <li key={idx} className="flex items-start space-x-2 text-base text-gray-700">
                 <CheckCircle className="w-4 h-4 mt-0.5 text-blue-500 flex-shrink-0" />
                 <span>{reason}</span>
               </li>
@@ -217,7 +217,7 @@ const AITradingSignal = ({ marketId }) => {
       )}
 
       {/* Footer */}
-      <div className="mt-4 pt-4 border-t border-gray-300 flex items-center justify-between text-xs text-gray-500">
+      <div className="mt-4 pt-4 border-t border-gray-300 flex items-center justify-between text-sm text-gray-500">
         <span>Statistical Model Analysis</span>
         <div className="flex items-center space-x-1">
           <Target className="w-3 h-3" />

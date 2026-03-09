@@ -86,7 +86,7 @@ function ExtractMarket() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
           Extract Market Data
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -124,7 +124,7 @@ function ExtractMarket() {
           {/* Search Form */}
           <form onSubmit={handleSearchSubmit} className="card space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Search Markets
               </label>
               <div className="flex gap-2">
@@ -144,7 +144,7 @@ function ExtractMarket() {
                   <span>Search</span>
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Enter at least 2 characters to search
               </p>
             </div>
@@ -165,7 +165,7 @@ function ExtractMarket() {
                   <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
                     Unable to search markets right now
                   </h3>
-                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                  <p className="text-base text-yellow-800 dark:text-yellow-300">
                     The search service is temporarily unavailable. Please try again in a few seconds, or paste a Polymarket URL directly using the "Paste URL" tab.
                   </p>
                 </div>
@@ -192,7 +192,7 @@ function ExtractMarket() {
                         {/* Top Row: Type Badge + Title */}
                         <div className="flex items-start gap-3">
                           <span
-                            className={`inline-block px-2 py-1 text-xs font-medium rounded text-white flex-shrink-0 ${
+                            className={`inline-block px-2 py-1 text-sm font-medium rounded text-white flex-shrink-0 ${
                               result.type === 'event'
                                 ? 'bg-purple-600'
                                 : 'bg-blue-600'
@@ -208,12 +208,12 @@ function ExtractMarket() {
                         {/* Middle Row: Category, Volume, Price */}
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                           {result.category && (
-                            <span className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            <span className="inline-block px-2 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                               {result.category}
                             </span>
                           )}
                           {result.volume_24h && (
-                            <div className="text-sm">
+                            <div className="text-base">
                               <p className="text-gray-500 dark:text-gray-400">24h Volume</p>
                               <p className="font-semibold text-gray-900 dark:text-white">
                                 ${(result.volume_24h / 1000).toFixed(1)}K
@@ -221,7 +221,7 @@ function ExtractMarket() {
                             </div>
                           )}
                           {result.yes_price !== undefined && result.yes_price !== null && (
-                            <div className="text-sm">
+                            <div className="text-base">
                               <p className="text-gray-500 dark:text-gray-400">YES Price</p>
                               <p className="font-semibold text-green-600 dark:text-green-400">
                                 {(result.yes_price * 100).toFixed(1)}%
@@ -236,7 +236,7 @@ function ExtractMarket() {
                             href={result.url || (result.type === 'event' ? `https://polymarket.com/event/${result.slug}` : `https://polymarket.com/market/${result.slug || result.id}`)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
+                            className="text-base text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
                           >
                             <ExternalLink className="w-3 h-3" />
                             View on Polymarket
@@ -244,14 +244,14 @@ function ExtractMarket() {
                           <button
                             type="button"
                             onClick={() => handleExtractFromSearch(result)}
-                            className="btn btn-primary text-sm py-2 px-3"
+                            className="btn btn-primary text-base py-2 px-3"
                           >
                             Extract This
                           </button>
                         </div>
 
                         {result.end_date && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Ends: {new Date(result.end_date).toLocaleDateString()}
                           </p>
                         )}
@@ -283,7 +283,7 @@ function ExtractMarket() {
           {/* URL Form */}
           <form onSubmit={handleExtractSubmit} className="card space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Polymarket URL *
               </label>
               <input
@@ -294,14 +294,14 @@ function ExtractMarket() {
                 onChange={(e) => setUrl(e.target.value)}
                 className="input w-full"
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Enter a Polymarket event or market URL
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Orderbook Depth
                 </label>
                 <input
@@ -312,13 +312,13 @@ function ExtractMarket() {
                   onChange={(e) => setDepth(parseInt(e.target.value))}
                   className="input w-full"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Levels per side (1-50)
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Fidelity (minutes)
                 </label>
                 <input
@@ -328,13 +328,13 @@ function ExtractMarket() {
                   onChange={(e) => setFidelity(parseInt(e.target.value))}
                   className="input w-full"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Price history granularity
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Base Rate
                 </label>
                 <input
@@ -346,14 +346,14 @@ function ExtractMarket() {
                   onChange={(e) => setBaseRate(parseFloat(e.target.value))}
                   className="input w-full"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Prior probability (0-1)
                 </p>
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-base text-gray-500 dark:text-gray-400">
                 This will fetch orderbook, price history, and compute analytics
               </p>
               <button
@@ -395,13 +395,13 @@ function ExtractMarket() {
                       <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
                         Extracting {jobStatus.markets_found} market(s)...
                       </h3>
-                      <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+                      <p className="text-base text-blue-800 dark:text-blue-300 mb-2">
                         {jobStatus.step || 'Initializing...'}
                       </p>
                       <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-1.5">
                         <div className="bg-blue-600 h-1.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
                       </div>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
                         This typically takes 30–90 seconds for large events.
                       </p>
                     </>
@@ -413,10 +413,10 @@ function ExtractMarket() {
                       </h3>
                       {jobStatus.market_ids && jobStatus.market_ids.length > 0 && (
                         <div className="space-y-1 mt-2">
-                          <p className="text-sm font-medium text-green-900 dark:text-green-100">View markets:</p>
+                          <p className="text-base font-medium text-green-900 dark:text-green-100">View markets:</p>
                           {jobStatus.market_ids.map((id) => id && (
                             <Link key={id} to={`/market/${id}`}
-                              className="block text-sm text-green-700 dark:text-green-300 hover:underline">
+                              className="block text-base text-green-700 dark:text-green-300 hover:underline">
                               Market ID: {id}
                             </Link>
                           ))}
@@ -427,7 +427,7 @@ function ExtractMarket() {
                   {jobStatus.status === 'error' && (
                     <>
                       <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">Extraction failed</h3>
-                      <p className="text-sm text-red-800 dark:text-red-300">{jobStatus.error}</p>
+                      <p className="text-base text-red-800 dark:text-red-300">{jobStatus.error}</p>
                     </>
                   )}
                 </div>
@@ -450,7 +450,7 @@ function ExtractMarket() {
                       return '⚠️ Extraction Failed'
                     })()}
                   </h3>
-                  <p className="text-sm text-red-800 dark:text-red-300">
+                  <p className="text-base text-red-800 dark:text-red-300">
                     {(() => {
                       const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
                       if (detail.toLowerCase().includes('no markets found'))
@@ -462,7 +462,7 @@ function ExtractMarket() {
                       return detail || 'Something went wrong. Please try again with a different URL.'
                     })()}
                   </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-2">
                     💡 Try an active market at <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="underline">polymarket.com</a>
                   </p>
                 </div>
@@ -475,7 +475,7 @@ function ExtractMarket() {
             <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">
               How to use
             </h3>
-            <ol className="space-y-2 text-sm text-blue-800 dark:text-blue-300">
+            <ol className="space-y-2 text-base text-blue-800 dark:text-blue-300">
               <li className="flex items-start">
                 <span className="font-bold mr-2">1.</span>
                 <span>Copy a Polymarket event or market URL (e.g., https://polymarket.com/event/...)</span>

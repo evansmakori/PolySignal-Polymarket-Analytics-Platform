@@ -19,7 +19,7 @@ function Layout({ children }) {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
               <TrendingUp className="w-8 h-8 text-primary-600" />
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Polymarket Dashboard
               </h1>
             </div>
@@ -29,7 +29,7 @@ function Layout({ children }) {
                 <Link
                   key={path}
                   to={path}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium transition-colors ${
                     location.pathname === path
                       ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -52,7 +52,7 @@ function Layout({ children }) {
       {/* Footer */}
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-center text-base text-gray-500 dark:text-gray-400">
             Polymarket Trading Dashboard • Educational purposes only • Not financial advice
           </p>
         </div>

@@ -49,8 +49,8 @@ function StatsGrid({ market }) {
               <stat.icon className={`w-6 h-6 ${stat.color}`} />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
-              <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-base text-gray-500 dark:text-gray-400">{stat.label}</p>
+              <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
             </div>
           </div>
         </div>

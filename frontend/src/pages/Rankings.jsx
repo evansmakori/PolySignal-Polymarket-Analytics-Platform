@@ -29,7 +29,7 @@ function Rankings() {
       <div>
         <div className="flex items-center gap-3 mb-2">
           <Trophy className="w-8 h-8 text-primary-600" />
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
             Market Rankings
           </h1>
         </div>
@@ -83,7 +83,7 @@ function Rankings() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
               Category
             </label>
             <select
@@ -98,7 +98,7 @@ function Rankings() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
               Min Liquidity
             </label>
             <input
@@ -129,7 +129,7 @@ function Rankings() {
           {view === 'improving' && (
             <div className="space-y-4">
               <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Top Improving Markets (Last 7 Days)
                 </h3>
                 {improving && improving.length > 0 ? (
@@ -145,21 +145,21 @@ function Rankings() {
                               {index + 1}. {market.title}
                             </div>
                             {market.category && (
-                              <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                              <span className="inline-block px-2 py-0.5 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                 {market.category}
                               </span>
                             )}
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            <div className="text-4xl font-bold text-green-600 dark:text-green-400">
                               +{market.score_change.toFixed(1)}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                               points
                             </div>
                           </div>
                         </div>
-                        <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="mt-3 flex items-center gap-4 text-base text-gray-600 dark:text-gray-400">
                           <span>Current: {market.current_score.toFixed(1)}</span>
                           <span>Change: {market.change_percent > 0 ? '+' : ''}{market.change_percent.toFixed(1)}%</span>
                         </div>

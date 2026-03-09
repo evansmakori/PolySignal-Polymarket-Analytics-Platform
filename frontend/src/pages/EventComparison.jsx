@@ -48,7 +48,7 @@ function EventComparisonPage() {
       <div>
         <div className="flex items-center gap-3 mb-2">
           <BarChart2 className="w-8 h-8 text-primary-600" />
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
             Compare Markets
           </h1>
         </div>
@@ -60,7 +60,7 @@ function EventComparisonPage() {
       {/* Input Section */}
       <div className="card">
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
             Enter Market IDs or Polymarket URL
           </label>
           <div className="flex gap-2">
@@ -90,7 +90,7 @@ function EventComparisonPage() {
         </div>
 
         {/* Helper Text */}
-        <div className="flex gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex gap-2 text-base text-gray-600 dark:text-gray-400">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
             <p className="mb-1">
@@ -112,10 +112,10 @@ function EventComparisonPage() {
               <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-1">
                 Event URL Detected
               </h4>
-              <p className="text-blue-800 dark:text-blue-400 text-sm">
+              <p className="text-blue-800 dark:text-blue-400 text-base">
                 To compare markets from an event URL, please:
               </p>
-              <ol className="text-blue-800 dark:text-blue-400 text-sm list-decimal list-inside mt-2">
+              <ol className="text-blue-800 dark:text-blue-400 text-base list-decimal list-inside mt-2">
                 <li>Go to the <strong>Extract Market</strong> page</li>
                 <li>Paste the event URL</li>
                 <li>Extract the markets to get their IDs</li>
@@ -129,7 +129,7 @@ function EventComparisonPage() {
       {/* Comparison Results */}
       {marketIds.length > 0 && !isUrl && (
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
             Comparing {marketIds.length} Market{marketIds.length !== 1 ? 's' : ''}
           </h2>
           <EventComparison marketIds={marketIds} />
@@ -140,7 +140,7 @@ function EventComparisonPage() {
       {marketIds.length === 0 && !isUrl && input === '' && (
         <div className="card text-center py-12">
           <BarChart2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
             No markets selected
           </h3>
           <p className="text-gray-600 dark:text-gray-400">

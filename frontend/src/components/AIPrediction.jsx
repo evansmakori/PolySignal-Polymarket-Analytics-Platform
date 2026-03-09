@@ -31,7 +31,7 @@ const AIPrediction = ({ marketId }) => {
       <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-lg shadow">
         <div className="flex items-center space-x-2 mb-4">
           <Brain className="w-5 h-5 text-purple-600 animate-pulse" />
-          <h3 className="text-lg font-semibold text-gray-800">AI Price Prediction</h3>
+          <h3 className="text-xl font-semibold text-gray-800">AI Price Prediction</h3>
         </div>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -87,9 +87,9 @@ const AIPrediction = ({ marketId }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <Brain className="w-5 h-5 text-purple-600" />
-          <h3 className="text-lg font-semibold text-gray-800">AI Price Prediction</h3>
+          <h3 className="text-xl font-semibold text-gray-800">AI Price Prediction</h3>
         </div>
-        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+        <span className="text-sm bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
           Statistical Model
         </span>
       </div>
@@ -97,8 +97,8 @@ const AIPrediction = ({ marketId }) => {
       <div className="space-y-4">
         {/* Predicted Price - Large Display */}
         <div className="text-center py-4 bg-white/70 rounded-lg">
-          <p className="text-sm text-gray-600 mb-2">Predicted Price</p>
-          <p className="text-4xl font-bold text-purple-600">
+          <p className="text-base text-gray-600 mb-2">Predicted Price</p>
+          <p className="text-6xl font-bold text-purple-600">
             {(predictedPrice * 100).toFixed(1)}%
           </p>
         </div>
@@ -110,24 +110,24 @@ const AIPrediction = ({ marketId }) => {
               {getDirectionIcon()}
             </div>
             <div>
-              <p className="text-sm text-gray-600">Direction</p>
-              <p className={`text-lg font-bold ${getDirectionColor()}`}>
+              <p className="text-base text-gray-600">Direction</p>
+              <p className={`text-xl font-bold ${getDirectionColor()}`}>
                 {getDirectionLabel()}
               </p>
             </div>
           </div>
 
           <div className="text-right">
-            <p className="text-sm text-gray-600">Model Type</p>
-            <p className="text-sm font-semibold text-gray-800">Statistical</p>
+            <p className="text-base text-gray-600">Model Type</p>
+            <p className="text-base font-semibold text-gray-800">Statistical</p>
           </div>
         </div>
 
         {/* Confidence Bar */}
         <div>
           <div className="flex justify-between items-center mb-1">
-            <p className="text-sm text-gray-600">Confidence</p>
-            <p className="text-sm font-semibold text-gray-800">
+            <p className="text-base text-gray-600">Confidence</p>
+            <p className="text-base font-semibold text-gray-800">
               {(confidence * 100).toFixed(0)}%
             </p>
           </div>
@@ -147,7 +147,7 @@ const AIPrediction = ({ marketId }) => {
 
         {/* Price Range */}
         {priceRange && (
-          <div className="bg-white/50 p-3 rounded text-xs space-y-2">
+          <div className="bg-white/50 p-3 rounded text-sm space-y-2">
             <p className="font-semibold text-gray-700">Predicted Range</p>
             <div className="flex justify-between">
               <span className="text-gray-600">Low:</span>
@@ -162,14 +162,14 @@ const AIPrediction = ({ marketId }) => {
 
         {/* Reasoning */}
         {prediction.reasoning && (
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm text-gray-700">
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-base text-gray-700">
             <p className="font-semibold text-blue-900 mb-1">Reasoning:</p>
             <p>{prediction.reasoning}</p>
           </div>
         )}
 
         {/* Footer Badge */}
-        <div className="flex items-center justify-center space-x-2 text-xs text-purple-600 bg-purple-100 py-2 rounded">
+        <div className="flex items-center justify-center space-x-2 text-sm text-purple-600 bg-purple-100 py-2 rounded">
           <Zap className="w-3 h-3" />
           <span>Statistical Model - No GPU Required</span>
         </div>

@@ -39,7 +39,7 @@ export default function TradesTicker({ marketId }) {
           <Activity className="w-4 h-4 text-blue-600" />
           <span>Recent Trades</span>
         </h3>
-        <span className="flex items-center space-x-1 text-xs text-green-600 dark:text-green-400">
+        <span className="flex items-center space-x-1 text-sm text-green-600 dark:text-green-400">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span>Live</span>
         </span>
@@ -55,7 +55,7 @@ export default function TradesTicker({ marketId }) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-base">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
@@ -100,7 +100,7 @@ export default function TradesTicker({ marketId }) {
         </div>
       )}
 
-      <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+      <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
         Updates every 15s
       </div>
     </div>

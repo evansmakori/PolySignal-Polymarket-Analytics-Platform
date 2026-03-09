@@ -5,7 +5,7 @@ function PriceChart({ data, title = 'Price History' }) {
   if (!data || data.length === 0) {
     return (
       <div className="card">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{title}</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{title}</h3>
         <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
           No data available
         </div>
@@ -35,22 +35,22 @@ function PriceChart({ data, title = 'Price History' }) {
       return (
         <div className="bg-white dark:bg-gray-800 border-2 border-primary-500 dark:border-primary-400 rounded-lg shadow-xl p-4 min-w-[200px]">
           {/* Date/Time */}
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
             {point.time}
           </div>
           
           {/* YES Price */}
           <div className="mb-2">
-            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">YES Price</div>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">YES Price</div>
+            <div className="text-4xl font-bold text-green-600 dark:text-green-400">
               {formatPercent(price)}
             </div>
           </div>
 
           {/* NO Price */}
           <div className="mb-2">
-            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">NO Price</div>
-            <div className="text-lg font-semibold text-red-600 dark:text-red-400">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">NO Price</div>
+            <div className="text-xl font-semibold text-red-600 dark:text-red-400">
               {formatPercent(noPrice)}
             </div>
           </div>
@@ -58,8 +58,8 @@ function PriceChart({ data, title = 'Price History' }) {
           {/* Price Change */}
           {priceChange !== null && (
             <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Change from Previous</div>
-              <div className={`text-sm font-semibold ${
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Change from Previous</div>
+              <div className={`text-base font-semibold ${
                 priceChange > 0 
                   ? 'text-green-600 dark:text-green-400' 
                   : priceChange < 0 
@@ -73,7 +73,7 @@ function PriceChart({ data, title = 'Price History' }) {
 
           {/* Decimal Value */}
           <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Decimal: {price.toFixed(4)}
             </div>
           </div>
@@ -85,7 +85,7 @@ function PriceChart({ data, title = 'Price History' }) {
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{title}</h3>
+      <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{title}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

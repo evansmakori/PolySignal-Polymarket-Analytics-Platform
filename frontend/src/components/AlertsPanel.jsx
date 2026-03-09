@@ -61,7 +61,7 @@ function AlertsPanel({ initialFilters = {} }) {
           <Bell className="w-5 h-5" />
           <span className="font-medium">Alerts</span>
           {alerts && alerts.length > 0 && (
-            <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center">
               {alerts.length}
             </span>
           )}
@@ -75,11 +75,11 @@ function AlertsPanel({ initialFilters = {} }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
             Market Alerts
           </h3>
           {alerts && alerts.length > 0 && (
-            <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-400 text-xs font-semibold rounded-full">
+            <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-400 text-sm font-semibold rounded-full">
               {alerts.length}
             </span>
           )}
@@ -95,7 +95,7 @@ function AlertsPanel({ initialFilters = {} }) {
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Min Score
           </label>
           <input
@@ -104,17 +104,17 @@ function AlertsPanel({ initialFilters = {} }) {
             max="100"
             value={filters.min_score}
             onChange={(e) => setFilters({ ...filters, min_score: parseFloat(e.target.value) })}
-            className="input w-full text-sm"
+            className="input w-full text-base"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Alert Type
           </label>
           <select
             value={filters.alert_type}
             onChange={(e) => setFilters({ ...filters, alert_type: e.target.value })}
-            className="input w-full text-sm"
+            className="input w-full text-base"
           >
             <option value="">All Types</option>
             <option value="high_score">High Score</option>
@@ -124,13 +124,13 @@ function AlertsPanel({ initialFilters = {} }) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Priority
           </label>
           <select
             value={filters.priority}
             onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-            className="input w-full text-sm"
+            className="input w-full text-base"
           >
             <option value="">All Priorities</option>
             <option value="critical">Critical</option>
@@ -151,7 +151,7 @@ function AlertsPanel({ initialFilters = {} }) {
       {/* Error State */}
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-sm text-red-800 dark:text-red-300">
+          <p className="text-base text-red-800 dark:text-red-300">
             Error loading alerts: {error.message}
           </p>
         </div>
@@ -173,17 +173,17 @@ function AlertsPanel({ initialFilters = {} }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="font-semibold text-sm line-clamp-1">
+                      <div className="font-semibold text-base line-clamp-1">
                         {alert.title}
                       </div>
-                      <div className="flex-shrink-0 text-xs font-bold">
+                      <div className="flex-shrink-0 text-sm font-bold">
                         {alert.score.toFixed(0)}
                       </div>
                     </div>
-                    <div className="text-sm opacity-90 mb-2">
+                    <div className="text-base opacity-90 mb-2">
                       {alert.message}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="px-2 py-0.5 bg-white/50 dark:bg-black/20 rounded">
                         {formatAlertType(alert.alert_type)}
                       </span>
@@ -207,7 +207,7 @@ function AlertsPanel({ initialFilters = {} }) {
             <div className="text-center py-8">
               <BellOff className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 dark:text-gray-400">No alerts at this time</p>
-              <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+              <p className="text-base text-gray-500 dark:text-gray-500 mt-1">
                 Try adjusting your filters
               </p>
             </div>
@@ -219,7 +219,7 @@ function AlertsPanel({ initialFilters = {} }) {
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={() => refetch()}
-          className="w-full btn-secondary text-sm"
+          className="w-full btn-secondary text-base"
         >
           Refresh Alerts
         </button>

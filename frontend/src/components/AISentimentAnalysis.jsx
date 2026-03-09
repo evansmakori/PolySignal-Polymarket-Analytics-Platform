@@ -80,7 +80,7 @@ const AISentimentAnalysis = ({ marketId }) => {
     <div className={`${config.bgColor} p-6 rounded-lg shadow border ${config.borderColor}`}>
       <div className="flex items-center space-x-2 mb-4">
         <MessageSquare className="w-5 h-5 text-blue-600" />
-        <h3 className="text-lg font-semibold text-gray-800">AI Sentiment Analysis</h3>
+        <h3 className="text-xl font-semibold text-gray-800">AI Sentiment Analysis</h3>
       </div>
 
       <div className="space-y-4">
@@ -89,13 +89,13 @@ const AISentimentAnalysis = ({ marketId }) => {
           <div className="flex items-center space-x-3">
             <SentimentIcon className={`w-6 h-6 ${config.color}`} />
             <div>
-              <p className="text-sm text-gray-600">Sentiment</p>
-              <p className={`text-lg font-bold ${config.badgeText}`}>
+              <p className="text-base text-gray-600">Sentiment</p>
+              <p className={`text-xl font-bold ${config.badgeText}`}>
                 {sentiment.sentiment?.toUpperCase()}
               </p>
             </div>
           </div>
-          <div className={`px-3 py-1 rounded-full font-semibold text-sm ${config.badgeBg} ${config.badgeText}`}>
+          <div className={`px-3 py-1 rounded-full font-semibold text-base ${config.badgeBg} ${config.badgeText}`}>
             {sentiment.sentiment?.toUpperCase()}
           </div>
         </div>
@@ -103,8 +103,8 @@ const AISentimentAnalysis = ({ marketId }) => {
         {/* Confidence Bar */}
         <div>
           <div className="flex justify-between items-center mb-1">
-            <p className="text-sm text-gray-600">Confidence</p>
-            <p className="text-sm font-semibold">{(sentiment.confidence * 100).toFixed(0)}%</p>
+            <p className="text-base text-gray-600">Confidence</p>
+            <p className="text-base font-semibold">{(sentiment.confidence * 100).toFixed(0)}%</p>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
@@ -116,9 +116,9 @@ const AISentimentAnalysis = ({ marketId }) => {
 
         {/* Market Sentiment Score Gauge (-1 to 1) */}
         <div>
-          <p className="text-sm text-gray-600 mb-2">Market Sentiment Score</p>
+          <p className="text-base text-gray-600 mb-2">Market Sentiment Score</p>
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-red-600 font-semibold">Bearish</span>
+            <span className="text-sm text-red-600 font-semibold">Bearish</span>
             <div className="flex-1 bg-gradient-to-r from-red-200 via-gray-200 to-green-200 rounded-full h-2.5">
               <div
                 className={`h-2.5 w-1 rounded-full ${
@@ -130,9 +130,9 @@ const AISentimentAnalysis = ({ marketId }) => {
                 }}
               ></div>
             </div>
-            <span className="text-xs text-green-600 font-semibold">Bullish</span>
+            <span className="text-sm text-green-600 font-semibold">Bullish</span>
           </div>
-          <p className="text-xs text-gray-500 mt-1 text-center">
+          <p className="text-sm text-gray-500 mt-1 text-center">
             Score: {sentiment.market_sentiment_score.toFixed(2)}
           </p>
         </div>
@@ -140,12 +140,12 @@ const AISentimentAnalysis = ({ marketId }) => {
         {/* Topics as Chips */}
         {sentiment.topics && sentiment.topics.length > 0 && (
           <div>
-            <p className="text-sm text-gray-600 mb-2">Topics</p>
+            <p className="text-base text-gray-600 mb-2">Topics</p>
             <div className="flex flex-wrap gap-2">
               {sentiment.topics.map((topic, idx) => (
                 <span
                   key={idx}
-                  className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium"
+                  className="text-sm bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-medium"
                 >
                   {topic}
                 </span>
@@ -157,12 +157,12 @@ const AISentimentAnalysis = ({ marketId }) => {
         {/* Key Signals */}
         {sentiment.key_signals && sentiment.key_signals.length > 0 && (
           <div>
-            <p className="text-sm text-gray-600 mb-2">Key Signals</p>
+            <p className="text-base text-gray-600 mb-2">Key Signals</p>
             <div className="flex flex-wrap gap-1.5">
               {sentiment.key_signals.slice(0, 5).map((signal, idx) => (
                 <span
                   key={idx}
-                  className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium"
+                  className="text-sm bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium"
                 >
                   {signal}
                 </span>
@@ -173,9 +173,9 @@ const AISentimentAnalysis = ({ marketId }) => {
 
         {/* Uncertainty Level */}
         <div className="flex items-center justify-between bg-white/50 p-3 rounded">
-          <span className="text-sm text-gray-600">Uncertainty Level</span>
+          <span className="text-base text-gray-600">Uncertainty Level</span>
           <span
-            className={`font-semibold text-sm ${
+            className={`font-semibold text-base ${
               sentiment.uncertainty_level === 'high'
                 ? 'text-red-600'
                 : sentiment.uncertainty_level === 'medium'
@@ -189,7 +189,7 @@ const AISentimentAnalysis = ({ marketId }) => {
 
         {/* Reasoning */}
         {sentiment.reasoning && (
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm text-gray-700">
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-base text-gray-700">
             <p className="font-semibold text-blue-900 mb-1">Analysis:</p>
             <p>{sentiment.reasoning}</p>
           </div>

@@ -134,7 +134,7 @@ function UnifiedRiskScore({ market }) {
     <div className="card">
       <div className="flex items-center gap-2 mb-4">
         <Shield className="w-5 h-5 text-primary-600" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Unified Risk Score
         </h3>
       </div>
@@ -142,13 +142,13 @@ function UnifiedRiskScore({ market }) {
       {/* Main Risk Score Display */}
       <div className={`p-6 rounded-xl bg-gradient-to-br ${getGradientColor(unifiedRiskScore)} mb-4`}>
         <div className="text-center">
-          <div className="text-white text-sm font-medium mb-2 opacity-90">
+          <div className="text-white text-base font-medium mb-2 opacity-90">
             Overall Risk Level
           </div>
           <div className="text-6xl font-bold text-white mb-2">
             {unifiedRiskScore.toFixed(0)}
           </div>
-          <div className="text-white text-lg font-semibold mb-3">
+          <div className="text-white text-xl font-semibold mb-3">
             {riskBand.label}
           </div>
           
@@ -159,7 +159,7 @@ function UnifiedRiskScore({ market }) {
               style={{ width: `${unifiedRiskScore}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-white/80 mt-1">
+          <div className="flex justify-between text-sm text-white/80 mt-1">
             <span>0 (Safe)</span>
             <span>100 (Risky)</span>
           </div>
@@ -176,7 +176,7 @@ function UnifiedRiskScore({ market }) {
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+          className="flex items-center gap-1 text-base text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
         >
           {isExpanded ? 'Hide' : 'Show'} Breakdown
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -186,24 +186,24 @@ function UnifiedRiskScore({ market }) {
       {/* Expandable Breakdown */}
       {isExpanded && (
         <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <div className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3">
             Risk Component Breakdown
           </div>
 
           {Object.entries(components).map(([key, component]) => (
             <div key={key} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-base">
                 <div className="flex items-center gap-2">
                   <component.icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-white">
                     {component.name}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     ({(component.weight * 100).toFixed(0)}% weight)
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     {component.format(component.value)}
                   </span>
                   <span className={`font-semibold min-w-[60px] text-right ${getRiskColor(component.risk)}`}>
@@ -220,7 +220,7 @@ function UnifiedRiskScore({ market }) {
                 />
               </div>
 
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {component.description}
               </div>
             </div>
@@ -228,10 +228,10 @@ function UnifiedRiskScore({ market }) {
 
           {/* Contribution Summary */}
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Weighted Contributions to Total Risk:
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-sm">
               {Object.entries(components).map(([key, component]) => (
                 <div key={key} className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">{component.name}:</span>
@@ -247,7 +247,7 @@ function UnifiedRiskScore({ market }) {
 
       {/* Risk Interpretation Guide */}
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <div className="text-xs text-blue-800 dark:text-blue-300">
+        <div className="text-sm text-blue-800 dark:text-blue-300">
           <div className="font-semibold mb-1">Risk Score Guide:</div>
           <div className="space-y-1">
             <div>• <span className="font-medium text-green-700 dark:text-green-400">0-30:</span> Low risk, stable market conditions</div>

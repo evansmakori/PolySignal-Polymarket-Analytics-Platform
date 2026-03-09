@@ -109,7 +109,7 @@ function RiskAlerts({ market }) {
           </div>
           <div>
             <h4 className="font-semibold text-green-800 dark:text-green-300 mb-1">No Risk Alerts</h4>
-            <p className="text-sm text-green-700 dark:text-green-400">
+            <p className="text-base text-green-700 dark:text-green-400">
               This market shows no extreme risk indicators at this time.
             </p>
           </div>
@@ -135,13 +135,13 @@ function RiskAlerts({ market }) {
               <h4 className={`font-bold mb-1 ${alert.textColor}`}>
                 {alert.title}
               </h4>
-              <p className={`text-sm ${alert.textColor} opacity-90`}>
+              <p className={`text-base ${alert.textColor} opacity-90`}>
                 {alert.message}
               </p>
               
               {/* Badge */}
               <div className="mt-2">
-                <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
+                <span className={`inline-block px-2 py-1 text-sm font-semibold rounded-full ${
                   alert.type === 'danger' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200' :
                   alert.type === 'warning' ? 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200' :
                   alert.type === 'opportunity' ? 'bg-blue-200 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200' :

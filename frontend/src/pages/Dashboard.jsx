@@ -21,27 +21,27 @@ function EventCard({ event }) {
 
       <div className="grid grid-cols-2 gap-3 mt-3">
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Markets</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Markets</div>
           <div className="font-semibold text-gray-900 dark:text-white">{event.market_count}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Best Score</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Best Score</div>
           <div className="font-semibold text-gray-900 dark:text-white">
             {event.best_score ? event.best_score.toFixed(1) : 'N/A'}
           </div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Volume</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Volume</div>
           <div className="font-semibold text-gray-900 dark:text-white">{formatLargeNumber(event.total_volume)}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Liquidity</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Liquidity</div>
           <div className="font-semibold text-gray-900 dark:text-white">{formatLargeNumber(event.total_liquidity)}</div>
         </div>
       </div>
 
       {event.last_updated && (
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center text-xs text-gray-400">
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center text-sm text-gray-400">
           <Calendar className="w-3 h-3 mr-1" />
           Updated {new Date(event.last_updated).toLocaleDateString()}
         </div>
@@ -68,7 +68,7 @@ function Dashboard() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Market Events</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Market Events</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             {filtered.length} event{filtered.length !== 1 ? 's' : ''} extracted
           </p>
@@ -104,7 +104,7 @@ function Dashboard() {
         {!isLoading && !error && filtered.length === 0 && (
           <div className="card text-center py-16">
             <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No events yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No events yet</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               Extract your first Polymarket event to get started.
             </p>

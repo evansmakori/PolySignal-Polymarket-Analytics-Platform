@@ -53,7 +53,7 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
         <div className="card">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Minimum Score
               </label>
               <input
@@ -65,14 +65,14 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
                 onChange={(e) => setMinScore(parseInt(e.target.value))}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-sm text-gray-500 mt-1">
                 <span>0</span>
                 <span className="font-semibold text-primary-600">{minScore}</span>
                 <span>100</span>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Results Limit
               </label>
               <select
@@ -92,7 +92,7 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
 
       {/* Results Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           {filteredMarkets.length} Markets Ranked
         </h3>
       </div>
@@ -108,7 +108,7 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
             <div className="flex items-start gap-4">
               {/* Rank Badge */}
               <div className="flex-shrink-0">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl ${
                   index < 3 
                     ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' 
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -125,7 +125,7 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
                       {market.title}
                     </h4>
                     {market.category && (
-                      <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      <span className="inline-block mt-1 px-2 py-0.5 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                         {market.category}
                       </span>
                     )}
@@ -134,16 +134,16 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
                   {/* Score Badge */}
                   <div className="flex-shrink-0">
                     <div className={`px-3 py-2 rounded-lg ${getScoreBadgeColor(market.predictive_strength_score)}`}>
-                      <div className="text-2xl font-bold text-center">
+                      <div className="text-4xl font-bold text-center">
                         {market.predictive_strength_score?.toFixed(0)}
                       </div>
-                      <div className="text-xs text-center opacity-75">score</div>
+                      <div className="text-sm text-center opacity-75">score</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Category & Metrics */}
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-base">
                   {/* Score Category */}
                   {market.score_category && (
                     <div className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
@@ -197,7 +197,7 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
       {filteredMarkets.length === 0 && (
         <div className="card text-center py-12">
           <TrendingDown className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
             No markets found
           </h3>
           <p className="text-gray-600 dark:text-gray-400">

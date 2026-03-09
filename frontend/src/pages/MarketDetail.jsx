@@ -120,7 +120,7 @@ function MarketDetail() {
   if (!displayData) {
     return (
       <div className="card text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
           Market not found
         </h3>
       </div>
@@ -130,8 +130,8 @@ function MarketDetail() {
   return (
     <ErrorBoundary fallback={
       <div className="card bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-center py-12">
-        <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">⚠️ Something went wrong</h3>
-        <p className="text-sm text-red-700 dark:text-red-300 mb-4">This market page couldn't be displayed. The data may be incomplete or in an unexpected format.</p>
+        <h3 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-2">⚠️ Something went wrong</h3>
+        <p className="text-base text-red-700 dark:text-red-300 mb-4">This market page couldn't be displayed. The data may be incomplete or in an unexpected format.</p>
         <Link to="/" className="inline-flex items-center text-primary-600 hover:text-primary-700">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
@@ -150,23 +150,23 @@ function MarketDetail() {
         <div className="space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 {displayData.title}
               </h1>
               {displayData.category && (
-                <span className="inline-block px-3 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 mr-2">
+                <span className="inline-block px-3 py-1 text-base rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 mr-2">
                   {displayData.category}
                 </span>
               )}
               {/* Trade Signal */}
               {displayData.trade_signal && (
-                <span className={`inline-block px-3 py-1 text-sm rounded-full font-semibold mr-2 ${getSignalColor(displayData.trade_signal)}`}>
+                <span className={`inline-block px-3 py-1 text-base rounded-full font-semibold mr-2 ${getSignalColor(displayData.trade_signal)}`}>
                   {displayData.trade_signal === 'long' ? '📈 Long' : displayData.trade_signal === 'short' ? '📉 Short' : '⏸ No Trade'}
                 </span>
               )}
               {/* Degen Risk */}
               {displayData.degen_risk != null && (
-                <span className={`inline-block px-3 py-1 text-sm rounded-full font-semibold ${
+                <span className={`inline-block px-3 py-1 text-base rounded-full font-semibold ${
                   displayData.degen_risk < 0.3 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                   displayData.degen_risk < 0.6 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
                   'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
@@ -180,13 +180,13 @@ function MarketDetail() {
             {liveData && (
               <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900 rounded-full">
                 <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-green-800 dark:text-green-300">LIVE</span>
+                <span className="text-sm font-medium text-green-800 dark:text-green-300">LIVE</span>
               </div>
             )}
           </div>
 
           {/* Timestamps */}
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             Last updated: {displayData.snapshot_ts ? formatDateTime(displayData.snapshot_ts) : 'N/A'}
           </div>
         </div>
@@ -221,9 +221,9 @@ function MarketDetail() {
 
           {/* AI-Powered Features Section */}
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border-2 border-purple-200">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center space-x-2">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center space-x-2">
               <span>🤖 AI-Powered Analysis</span>
-              <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded">DigitalOcean GPU</span>
+              <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">DigitalOcean GPU</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <ErrorBoundary label="AI Prediction"><AIPrediction marketId={marketId} /></ErrorBoundary>
@@ -243,7 +243,7 @@ function MarketDetail() {
             {/* Fair Value & Expected Value */}
             <ErrorBoundary label="Valuation">
               <div className="card">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Valuation</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Valuation</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Fair Value</span>
@@ -270,7 +270,7 @@ function MarketDetail() {
             {/* Risk Metrics */}
             <ErrorBoundary label="Risk Metrics">
               <div className="card">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Risk Metrics</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Risk Metrics</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Volatility (1w)</span>

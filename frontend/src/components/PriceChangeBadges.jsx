@@ -19,11 +19,11 @@ export default function PriceChangeBadges({ market }) {
           key={change.label}
           className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700"
         >
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
             {change.label}
           </span>
           <span
-            className={`text-xs font-semibold ${
+            className={`text-sm font-semibold ${
               change.value > 0
                 ? 'text-green-600 dark:text-green-400'
                 : 'text-red-600 dark:text-red-400'

@@ -84,10 +84,10 @@ function EventDetail() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <Link to="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4">
+          <Link to="/" className="inline-flex items-center text-base text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Events
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
             {event?.event_title || 'Event Markets'}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -99,24 +99,24 @@ function EventDetail() {
         <div className="grid grid-cols-3 gap-4">
           <div className="card text-center">
             <DollarSign className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-            <div className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
               {formatLargeNumber(markets?.reduce((s, m) => s + (m.volume_total || 0), 0))}
             </div>
-            <div className="text-xs text-gray-500">Total Volume</div>
+            <div className="text-sm text-gray-500">Total Volume</div>
           </div>
           <div className="card text-center">
             <BarChart2 className="w-5 h-5 text-green-600 mx-auto mb-1" />
-            <div className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
               {formatLargeNumber(markets?.reduce((s, m) => s + (m.liquidity || 0), 0))}
             </div>
-            <div className="text-xs text-gray-500">Total Liquidity</div>
+            <div className="text-sm text-gray-500">Total Liquidity</div>
           </div>
           <div className="card text-center">
             <TrendingUp className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-            <div className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="text-xl font-bold text-gray-900 dark:text-white">
               {markets?.length || 0}
             </div>
-            <div className="text-xs text-gray-500">Markets</div>
+            <div className="text-sm text-gray-500">Markets</div>
           </div>
         </div>
 
@@ -127,7 +127,7 @@ function EventDetail() {
           <div className="relative" ref={signalDropdownRef}>
             <button
               onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-base font-medium border transition-colors ${
                 signalFilter !== 'all'
                   ? 'bg-primary-600 text-white border-primary-600'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -142,12 +142,12 @@ function EventDetail() {
                   <button
                     key={key}
                     onClick={() => { setSignalFilter(key); setSignalDropdownOpen(false) }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full text-left px-4 py-2.5 text-base hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center first:rounded-t-lg last:rounded-b-lg ${
                       signalFilter === key ? 'text-primary-600 font-medium' : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {label}
-                    <span className="text-xs text-gray-400">
+                    <span className="text-sm text-gray-400">
                       ({key === 'all' ? markets?.length :
                         markets?.filter(m => key === 'none'
                           ? !m.trade_signal || m.trade_signal === 'no_trade'
@@ -164,7 +164,7 @@ function EventDetail() {
           <div className="relative" ref={liquidityDropdownRef}>
             <button
               onClick={() => setLiquidityDropdownOpen(!liquidityDropdownOpen)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-base font-medium border transition-colors ${
                 liquidityFilter !== 'all'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -179,7 +179,7 @@ function EventDetail() {
                   <button
                     key={key}
                     onClick={() => { setLiquidityFilter(key); setLiquidityDropdownOpen(false) }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center first:rounded-t-lg last:rounded-b-lg ${
+                    className={`w-full text-left px-4 py-2.5 text-base hover:bg-gray-50 dark:hover:bg-gray-700 flex justify-between items-center first:rounded-t-lg last:rounded-b-lg ${
                       liquidityFilter === key ? 'text-blue-600 font-medium' : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
@@ -191,7 +191,7 @@ function EventDetail() {
           </div>
 
           {/* Result count */}
-          <span className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
+          <span className="text-base text-gray-500 dark:text-gray-400 ml-auto">
             Showing {filteredMarkets.length} of {markets?.length || 0} markets
           </span>
         </div>

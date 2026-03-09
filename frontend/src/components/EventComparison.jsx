@@ -64,7 +64,7 @@ function EventComparison({ marketIds = [] }) {
     return (
       <div className="card text-center py-12">
         <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
           No markets found
         </h3>
         <p className="text-gray-600 dark:text-gray-400">
@@ -92,42 +92,42 @@ function EventComparison({ marketIds = [] }) {
         <div className="card">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
                 Total Markets
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-4xl font-bold text-gray-900 dark:text-white">
                 {summaryData.total_markets}
               </div>
             </div>
 
             {summaryData.best_opportunity && (
               <div className="text-center">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
                   Best Opportunity
                 </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                <div className="text-xl font-bold text-gray-900 dark:text-white truncate">
                   {truncateTitle(summaryData.best_opportunity.title, 20)}
                 </div>
-                <div className="text-sm text-primary-600 dark:text-primary-400">
+                <div className="text-base text-primary-600 dark:text-primary-400">
                   {summaryData.best_opportunity.score.toFixed(1)}
                 </div>
               </div>
             )}
 
             <div className="text-center">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
                 Total Liquidity
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-4xl font-bold text-gray-900 dark:text-white">
                 {formatLargeNumber(summaryData.total_liquidity)}
               </div>
             </div>
 
             <div className="text-center">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              <div className="text-base text-gray-600 dark:text-gray-400 mb-1">
                 Avg Score
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-4xl font-bold text-gray-900 dark:text-white">
                 {summaryData.avg_score.toFixed(1)}
               </div>
             </div>
@@ -137,10 +137,10 @@ function EventComparison({ marketIds = [] }) {
 
       {/* Comparison Table */}
       <div className="card overflow-x-auto">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
           Market Comparison
         </h3>
-        <table className="w-full text-sm">
+        <table className="w-full text-base">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
@@ -202,7 +202,7 @@ function EventComparison({ marketIds = [] }) {
                     {market.predictive_score.toFixed(0)}
                   </span>
                 </td>
-                <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300 text-xs">
+                <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300 text-sm">
                   {market.score_category}
                 </td>
                 <td className={`py-3 px-4 text-center font-semibold ${getSignalColor(market.trade_signal)}`}>
@@ -234,7 +234,7 @@ function EventComparison({ marketIds = [] }) {
 
       {/* YES Price Chart */}
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
           YES Price Comparison
         </h3>
         <ResponsiveContainer width="100%" height={300}>
