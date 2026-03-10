@@ -410,34 +410,39 @@ def search_events(query: str, limit: int = 10) -> List[Dict[str, Any]]:
 
 
 def fetch_recent_trades(token_id: str, limit: int = 20) -> List[Dict[str, Any]]:
-    """Fetch recent trades for a token from CLOB API."""
+    """Fetch recent trades for a token using public CLOB last-trades-prices endpoint."""
     try:
-        r = _retry_get(
-            f"{settings.CLOB_BASE}/trades",
-            params={"market": token_id, "limit": limit}
+        r = requests.get(
+            f"{settings.CLOB_BASE}/last-trades-prices",
+            params={"token_id": token_id},
+            timeout=settings.REQUEST_TIMEOUT,
         )
-        data = r.json() if r.content else {}
-        trades = data.get("data", []) if isinstance(data, dict) else data
+        if r.status_code in (401, 403, 404):
+            return []
+        r.raise_for_status()
+        data = r.json() if r.content else []
+        trades = data if isinstance(data, list) else data.get("data", [])
         result = []
-        for t in trades:
-            ts = t.get("match_time") or t.get("created_at") or t.get("timestamp")
+        for t in trades[:limit]:
+            ts = t.get("timestamp") or t.get("match_time") or t.get("created_at")
             try:
-                if ts and str(ts).isdigit():
-                    dt = datetime.fromtimestamp(int(ts), tz=timezone.utc)
+                if ts and str(ts).replace('.','').isdigit():
+                    dt = datetime.fromtimestamp(float(ts), tz=timezone.utc)
                 elif ts:
                     dt = datetime.fromisoformat(str(ts).replace('Z', '+00:00'))
                 else:
                     dt = _utc_now()
             except Exception:
                 dt = _utc_now()
+            side = t.get("side") or t.get("outcome") or "BUY"
             result.append({
                 "trade_id": t.get("id") or t.get("trade_id") or str(hash(str(t))),
                 "token_id": token_id,
-                "side": t.get("side") or t.get("outcome"),
+                "side": side,
                 "price": float(t.get("price", 0) or 0),
                 "size": float(t.get("size", 0) or 0),
                 "trade_ts": dt,
-                "maker_addr": t.get("maker_address"),
+                "maker_addr": t.get("maker_address") or t.get("proxyWallet"),
                 "taker_addr": t.get("taker_address"),
             })
         return result
