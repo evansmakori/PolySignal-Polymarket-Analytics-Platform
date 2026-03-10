@@ -656,9 +656,35 @@ async def get_market_score_history(
     - **interval_hours**: Sampling interval in hours (default: 24, max: 168)
     """
     from ..core.score_history import get_score_history
+    from ..core.database import get_pool, TBL_STATS
+    from ..core.scoring import calculate_market_score
     history = await get_score_history(market_id, days=days, interval_hours=interval_hours)
     if not history:
-        raise HTTPException(status_code=404, detail="No score history found for this market")
+        # Fall back to single latest snapshot if no history
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                f"SELECT * FROM {TBL_STATS} WHERE market_id = $1 ORDER BY snapshot_ts DESC LIMIT 1",
+                market_id
+            )
+        if not row:
+            raise HTTPException(status_code=404, detail="No score history found for this market")
+        market_dict = dict(row)
+        score_result = calculate_market_score(market_dict)
+        history = [{
+            "timestamp": market_dict["snapshot_ts"],
+            "score": score_result["score"],
+            "category": score_result["category"],
+            "metrics": {
+                "expected_value": market_dict.get("expected_value"),
+                "kelly_fraction": market_dict.get("kelly_fraction"),
+                "liquidity": market_dict.get("liquidity"),
+                "volatility": market_dict.get("volatility"),
+                "orderbook_imbalance": market_dict.get("orderbook_imbalance"),
+                "spread": market_dict.get("spread"),
+                "sentiment_momentum": market_dict.get("sentiment_momentum"),
+            },
+        }]
     return history
 
 

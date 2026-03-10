@@ -59,6 +59,25 @@ function ScoreHistoryChart({ marketId }) {
       <div className="text-center py-8 text-gray-500 dark:text-gray-400">No score data available</div>
     </div>
   )
+
+  // Single data point — show current score but explain history needs time to build
+  if (validHistory.length === 1) return (
+    <div className="card">
+      <div className="flex items-center gap-2 mb-4">
+        <LineChart className="w-5 h-5 text-primary-600" />
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Score History</h3>
+      </div>
+      <div className="text-center py-6">
+        <div className="text-5xl font-bold text-primary-600 mb-2">
+          {validHistory[0].score.toFixed(1)}
+        </div>
+        <div className="text-base text-gray-500 dark:text-gray-400 mb-4">Current Score</div>
+        <div className="text-sm text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+          📊 Score history builds up over time as you re-extract this market. Re-extract periodically to see trends.
+        </div>
+      </div>
+    </div>
+  )
   const maxScore = Math.max(...validHistory.map(h => h.score), 100)
   const minScore = Math.min(...validHistory.map(h => h.score), 0)
   const scoreRange = maxScore - minScore || 1
