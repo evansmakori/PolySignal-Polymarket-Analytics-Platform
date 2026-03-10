@@ -530,6 +530,36 @@ async def trigger_lifecycle_job():
     return {"success": True, "counts": counts}
 
 
+@router.post("/backfill-scores", response_model=Dict[str, Any])
+async def backfill_scores():
+    """Backfill predictive_score for all markets that have NULL scores."""
+    from ..core.database import get_pool, TBL_STATS
+    from ..core.scoring import calculate_market_score
+    pool = await get_pool()
+    updated = 0
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"SELECT * FROM {TBL_STATS} WHERE predictive_score IS NULL"
+        )
+        for row in rows:
+            market_dict = dict(row)
+            try:
+                score_result = calculate_market_score(market_dict)
+                await conn.execute(
+                    f"""UPDATE {TBL_STATS}
+                        SET predictive_score = $1, score_category = $2
+                        WHERE market_id = $3 AND snapshot_ts = $4""",
+                    score_result["score"],
+                    score_result["category"],
+                    market_dict["market_id"],
+                    market_dict["snapshot_ts"],
+                )
+                updated += 1
+            except Exception:
+                pass
+    return {"success": True, "updated": updated}
+
+
 @router.get("/events/archived", response_model=List[Dict[str, Any]])
 async def list_archived_events(
     limit: int = Query(50, ge=1, le=200),
