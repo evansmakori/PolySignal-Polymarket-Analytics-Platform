@@ -1,25 +1,69 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Search, TrendingUp, DollarSign, BarChart2, ChevronRight, Calendar, Archive } from 'lucide-react'
+import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity } from 'lucide-react'
 import { marketsApi } from '../services/api'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { formatLargeNumber } from '../utils/formatters'
 
+function getLifecycleInfo(event) {
+  const status = event.lifecycle_status || 'active'
+  const resolvedAt = event.resolved_at ? new Date(event.resolved_at) : null
+  const now = new Date()
+
+  if (status === 'resolved' && resolvedAt) {
+    const daysResolved = Math.floor((now - resolvedAt) / (1000 * 60 * 60 * 24))
+    const daysUntilArchive = 30 - daysResolved
+    return {
+      status: 'resolved',
+      badge: { label: 'Resolved', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: <CheckCircle className="w-3 h-3" /> },
+      warning: daysUntilArchive <= 5 && daysUntilArchive > 0
+        ? { text: `Archives in ${daysUntilArchive} day${daysUntilArchive !== 1 ? 's' : ''}`, color: 'text-orange-500 dark:text-orange-400' }
+        : daysUntilArchive <= 0
+        ? { text: 'Archiving soon', color: 'text-red-500 dark:text-red-400' }
+        : null
+    }
+  }
+
+  return {
+    status: 'active',
+    badge: { label: 'Active', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: <Activity className="w-3 h-3" /> },
+    warning: null
+  }
+}
+
 function EventCard({ event }) {
+  const lifecycle = getLifecycleInfo(event)
+
   return (
     <Link
       to={`/event/${event.event_id}`}
       className="card hover:shadow-lg transition-shadow cursor-pointer group block"
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Title + arrow */}
+      <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2 flex-1 mr-2">
           {event.event_title || 'Untitled Event'}
         </h3>
         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary-600 flex-shrink-0 mt-0.5" />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
+      {/* Status badge + expiry warning */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${lifecycle.badge.color}`}>
+          {lifecycle.badge.icon}
+          {lifecycle.badge.label}
+        </span>
+        {lifecycle.warning && (
+          <span className={`inline-flex items-center gap-1 text-xs font-medium ${lifecycle.warning.color}`}>
+            <Clock className="w-3 h-3" />
+            {lifecycle.warning.text}
+          </span>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Markets</div>
           <div className="font-semibold text-gray-900 dark:text-white">{event.market_count}</div>
@@ -40,6 +84,7 @@ function EventCard({ event }) {
         </div>
       </div>
 
+      {/* Footer */}
       {event.last_updated && (
         <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center text-sm text-gray-400">
           <Calendar className="w-3 h-3 mr-1" />
