@@ -322,7 +322,7 @@ def assemble_market_stats(
         "degen_risk": degen_risk,
     }
 
-    # Calculate predictive score — always returns a value, never None
+    # Calculate predictive score — always returns a meaningful value
     score_val = None
     score_cat = "Neutral / Watchlist"
     try:
@@ -332,11 +332,17 @@ def assemble_market_stats(
     except Exception as e:
         print(f"⚠ Scoring failed for market {stats.get('market_id')}: {e}")
 
-    # Fallback: log-scale liquidity score if scoring returned None
-    if score_val is None:
+    # If score is None or too low (< 1.0) due to missing fields,
+    # use a liquidity-based fallback so we always show a meaningful score
+    liq = _safe_float(stats.get("liquidity"), 0.0)
+    vol = _safe_float(stats.get("volume_total"), 0.0)
+    if score_val is None or score_val < 1.0:
         try:
-            liq = _safe_float(stats.get("liquidity"), 0.0)
-            score_val = round(min(100.0, max(1.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100)), 2)
+            # Blend liquidity + volume into a 0-100 score
+            liq_score = min(100.0, max(0.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100))
+            vol_score = min(100.0, max(0.0, math.log10(max(vol, 1)) / math.log10(10_000_000) * 100))
+            score_val = round(liq_score * 0.6 + vol_score * 0.4, 2)
+            score_val = max(score_val, 1.0)  # always at least 1.0
             score_cat = "Neutral / Watchlist"
         except Exception:
             score_val = 1.0
