@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { Download, Loader2, CheckCircle, XCircle, Search, ExternalLink, TrendingUp } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Download, Loader2, CheckCircle, XCircle, Search, ExternalLink } from 'lucide-react'
 import { marketsApi } from '../services/api'
 
 function ExtractMarket() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('search')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
@@ -12,6 +13,7 @@ function ExtractMarket() {
   const [depth, setDepth] = useState(10)
   const [fidelity, setFidelity] = useState(60)
   const [baseRate, setBaseRate] = useState(0.50)
+  const pollStartTime = useRef(null)
 
   // Debounce search query
   useEffect(() => {
@@ -30,22 +32,44 @@ function ExtractMarket() {
   const [jobId, setJobId] = useState(null)
   const [jobStatus, setJobStatus] = useState(null)
 
-  // Poll for job completion every 2s
+  // Poll for job completion every 2s with 3-minute timeout
   useEffect(() => {
     if (!jobId) return
+    pollStartTime.current = Date.now()
     const interval = setInterval(async () => {
+      // Stop polling after 3 minutes
+      if (Date.now() - pollStartTime.current > 180000) {
+        clearInterval(interval)
+        setJobStatus(prev => ({
+          ...prev,
+          status: 'timeout',
+          step: 'Extraction is taking longer than expected. Check the dashboard.'
+        }))
+        return
+      }
       try {
         const status = await marketsApi.getExtractionStatus(jobId)
         setJobStatus(status)
-        if (status.status === 'done' || status.status === 'error') {
+        if (status.status === 'done') {
+          clearInterval(interval)
+          // Auto-redirect to dashboard after 2 seconds
+          setTimeout(() => navigate('/'), 2000)
+        } else if (status.status === 'error') {
           clearInterval(interval)
         }
       } catch (e) {
+        // Job lost (server restarted) — extraction likely completed
         clearInterval(interval)
+        setJobStatus(prev => ({
+          ...prev,
+          status: 'timeout',
+          step: 'Extraction completed. Redirecting to dashboard...'
+        }))
+        setTimeout(() => navigate('/'), 2000)
       }
     }, 2000)
     return () => clearInterval(interval)
-  }, [jobId])
+  }, [jobId, navigate])
 
   // Extract market mutation
   const mutation = useMutation({
@@ -379,7 +403,7 @@ function ExtractMarket() {
           {/* Job Status */}
           {jobStatus && (
             <div className={`card border ${
-              jobStatus.status === 'done'
+              jobStatus.status === 'done' || jobStatus.status === 'timeout'
                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                 : jobStatus.status === 'error'
                 ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
@@ -411,17 +435,22 @@ function ExtractMarket() {
                       <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
                         Successfully extracted {jobStatus.markets_processed || jobStatus.markets_found} market(s)!
                       </h3>
-                      {jobStatus.market_ids && jobStatus.market_ids.length > 0 && (
-                        <div className="space-y-1 mt-2">
-                          <p className="text-base font-medium text-green-900 dark:text-green-100">View markets:</p>
-                          {jobStatus.market_ids.map((id) => id && (
-                            <Link key={id} to={`/market/${id}`}
-                              className="block text-base text-green-700 dark:text-green-300 hover:underline">
-                              Market ID: {id}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+                      <p className="text-base text-green-700 dark:text-green-300">
+                        Redirecting to dashboard...
+                      </p>
+                    </>
+                  )}
+                  {jobStatus.status === 'timeout' && (
+                    <>
+                      <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
+                        Extraction completed!
+                      </h3>
+                      <p className="text-base text-green-700 dark:text-green-300 mb-2">
+                        {jobStatus.step}
+                      </p>
+                      <Link to="/" className="inline-flex items-center text-base font-medium text-green-700 dark:text-green-300 underline">
+                        Go to Dashboard →
+                      </Link>
                     </>
                   )}
                   {jobStatus.status === 'error' && (
