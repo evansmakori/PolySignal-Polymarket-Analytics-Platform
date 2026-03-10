@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { marketsApi } from '../services/api'
 
 function ExtractMarket() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [url, setUrl] = useState('')
   const [jobId, setJobId] = useState(null)
   const [jobStatus, setJobStatus] = useState(null)
@@ -30,7 +31,9 @@ function ExtractMarket() {
         setJobStatus(status)
         if (status.status === 'done') {
           clearInterval(interval)
-          setTimeout(() => navigate('/'), 2000)
+          // Invalidate dashboard cache so new event appears immediately
+          await queryClient.invalidateQueries({ queryKey: ['events'] })
+          setTimeout(() => navigate('/'), 1000)
         } else if (status.status === 'error') {
           clearInterval(interval)
         }
@@ -41,7 +44,9 @@ function ExtractMarket() {
           status: 'timeout',
           step: 'Extraction completed. Redirecting to dashboard...'
         }))
-        setTimeout(() => navigate('/'), 2000)
+        // Invalidate cache on timeout too
+        await queryClient.invalidateQueries({ queryKey: ['events'] })
+        setTimeout(() => navigate('/'), 1000)
       }
     }, 2000)
     return () => clearInterval(interval)
