@@ -1,43 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { Download, Loader2, CheckCircle, XCircle, Search, ExternalLink } from 'lucide-react'
+import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { marketsApi } from '../services/api'
 
 function ExtractMarket() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('search')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [url, setUrl] = useState('')
-  const [depth, setDepth] = useState(10)
-  const [fidelity, setFidelity] = useState(60)
-  const [baseRate, setBaseRate] = useState(0.50)
-  const pollStartTime = useRef(null)
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 400)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  // Search markets query
-  const searchResults = useQuery({
-    queryKey: ['market-search', debouncedQuery],
-    queryFn: () => marketsApi.searchMarkets(debouncedQuery, 20, true),
-    enabled: debouncedQuery.length >= 2,
-    staleTime: 60 * 1000,
-  })
-
   const [jobId, setJobId] = useState(null)
   const [jobStatus, setJobStatus] = useState(null)
+  const pollStartTime = useRef(null)
 
   // Poll for job completion every 2s with 3-minute timeout
   useEffect(() => {
     if (!jobId) return
     pollStartTime.current = Date.now()
     const interval = setInterval(async () => {
-      // Stop polling after 3 minutes
       if (Date.now() - pollStartTime.current > 180000) {
         clearInterval(interval)
         setJobStatus(prev => ({
@@ -52,13 +30,11 @@ function ExtractMarket() {
         setJobStatus(status)
         if (status.status === 'done') {
           clearInterval(interval)
-          // Auto-redirect to dashboard after 2 seconds
           setTimeout(() => navigate('/'), 2000)
         } else if (status.status === 'error') {
           clearInterval(interval)
         }
       } catch (e) {
-        // Job lost (server restarted) — extraction likely completed
         clearInterval(interval)
         setJobStatus(prev => ({
           ...prev,
@@ -71,7 +47,6 @@ function ExtractMarket() {
     return () => clearInterval(interval)
   }, [jobId, navigate])
 
-  // Extract market mutation
   const mutation = useMutation({
     mutationFn: (data) => marketsApi.extractMarket(data),
     onSuccess: (data) => {
@@ -82,453 +57,173 @@ function ExtractMarket() {
     },
   })
 
-  const handleSearchSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    // Search is handled by the query above
-  }
-
-  const handleExtractFromSearch = (result) => {
-    const polymarketUrl = result.url || (result.type === 'event'
-      ? `https://polymarket.com/event/${result.slug}`
-      : `https://polymarket.com/market/${result.slug || result.id}`)
-    setUrl(polymarketUrl)
-    setActiveTab('url')
-  }
-
-  const handleExtractSubmit = (e) => {
-    e.preventDefault()
-    mutation.mutate({
-      url,
-      depth,
-      intervals: ['1w', '1m'],
-      fidelity_min: fidelity,
-      base_rate: baseRate,
-    })
+    mutation.mutate({ url, depth: 10, intervals: ['1w', '1m'], fidelity_min: 60, base_rate: 0.50 })
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
           Extract Market Data
         </h1>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-          Search for markets or paste a Polymarket URL to analyze
+          Paste a Polymarket URL to analyze and track a market or event.
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab('search')}
-          className={`px-4 py-3 font-medium transition-colors ${
-            activeTab === 'search'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
-        >
-          🔍 Search Markets
-        </button>
-        <button
-          onClick={() => setActiveTab('url')}
-          className={`px-4 py-3 font-medium transition-colors ${
-            activeTab === 'url'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
-        >
-          🔗 Paste URL
-        </button>
-      </div>
+      {/* URL Form */}
+      <form onSubmit={handleSubmit} className="card space-y-5">
+        <div>
+          <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Polymarket URL
+          </label>
+          <input
+            type="url"
+            required
+            placeholder="https://polymarket.com/event/... or https://polymarket.com/market/..."
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className="input w-full"
+            disabled={mutation.isPending || jobStatus?.status === 'running'}
+          />
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Paste any Polymarket event or market URL
+          </p>
+        </div>
 
-      {/* Search Tab */}
-      {activeTab === 'search' && (
-        <div className="space-y-6">
-          {/* Search Form */}
-          <form onSubmit={handleSearchSubmit} className="card space-y-4">
-            <div>
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search Markets
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Search by keyword (e.g., 'Bitcoin', 'Election')"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input flex-1"
-                />
-                <button
-                  type="submit"
-                  disabled={searchQuery.length < 2}
-                  className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  <Search className="w-4 h-4" />
-                  <span>Search</span>
-                </button>
-              </div>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Enter at least 2 characters to search
-              </p>
-            </div>
-          </form>
-
-          {/* Search Results */}
-          {searchResults.isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
-            </div>
+        <button
+          type="submit"
+          disabled={mutation.isPending || !url || jobStatus?.status === 'running'}
+          className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 w-full"
+        >
+          {mutation.isPending || jobStatus?.status === 'running' ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Extracting...</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              <span>Extract Data</span>
+            </>
           )}
+        </button>
+      </form>
 
-          {searchResults.isError && (
-            <div className="card bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-start space-x-3">
-                <span className="text-2xl">🔌</span>
-                <div>
-                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
-                    Unable to search markets right now
+      {/* Job Status */}
+      {jobStatus && (
+        <div className={`card border ${
+          jobStatus.status === 'done' || jobStatus.status === 'timeout'
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+            : jobStatus.status === 'error'
+            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+            : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+        }`}>
+          <div className="flex items-start space-x-3">
+            {jobStatus.status === 'running' && <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 animate-spin" />}
+            {(jobStatus.status === 'done' || jobStatus.status === 'timeout') && <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />}
+            {jobStatus.status === 'error' && <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />}
+            <div className="flex-1">
+              {jobStatus.status === 'running' && (
+                <>
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                    Extracting {jobStatus.markets_found} market(s)...
                   </h3>
-                  <p className="text-base text-yellow-800 dark:text-yellow-300">
-                    The search service is temporarily unavailable. Please try again in a few seconds, or paste a Polymarket URL directly using the "Paste URL" tab.
+                  <p className="text-base text-blue-800 dark:text-blue-300 mb-2">
+                    {jobStatus.step || 'Fetching data and computing analytics...'}
                   </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {searchResults.data && (
-            <div className="space-y-3">
-              {searchResults.data.length === 0 ? (
-                <div className="card text-center py-8">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No markets found matching your search
+                  <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-1.5">
+                    <div className="bg-blue-600 h-1.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                  </div>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                    This typically takes 30–90 seconds for large events.
                   </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {searchResults.data.map((result) => (
-                    <div
-                      key={result.id}
-                      className="card hover:shadow-lg transition-shadow"
-                    >
-                      <div className="space-y-3">
-                        {/* Top Row: Type Badge + Title */}
-                        <div className="flex items-start gap-3">
-                          <span
-                            className={`inline-block px-2 py-1 text-sm font-medium rounded text-white flex-shrink-0 ${
-                              result.type === 'event'
-                                ? 'bg-purple-600'
-                                : 'bg-blue-600'
-                            }`}
-                          >
-                            {result.type === 'event' ? 'Event' : 'Market'}
-                          </span>
-                          <h3 className="font-semibold text-gray-900 dark:text-white flex-1 line-clamp-2">
-                            {result.title}
-                          </h3>
-                        </div>
-
-                        {/* Middle Row: Category, Volume, Price */}
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                          {result.category && (
-                            <span className="inline-block px-2 py-1 text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                              {result.category}
-                            </span>
-                          )}
-                          {result.volume_24h && (
-                            <div className="text-base">
-                              <p className="text-gray-500 dark:text-gray-400">24h Volume</p>
-                              <p className="font-semibold text-gray-900 dark:text-white">
-                                ${(result.volume_24h / 1000).toFixed(1)}K
-                              </p>
-                            </div>
-                          )}
-                          {result.yes_price !== undefined && result.yes_price !== null && (
-                            <div className="text-base">
-                              <p className="text-gray-500 dark:text-gray-400">YES Price</p>
-                              <p className="font-semibold text-green-600 dark:text-green-400">
-                                {(result.yes_price * 100).toFixed(1)}%
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Bottom Row: External Link + Extract Button */}
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <a
-                            href={result.url || (result.type === 'event' ? `https://polymarket.com/event/${result.slug}` : `https://polymarket.com/market/${result.slug || result.id}`)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-base text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            View on Polymarket
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => handleExtractFromSearch(result)}
-                            className="btn btn-primary text-base py-2 px-3"
-                          >
-                            Extract This
-                          </button>
-                        </div>
-
-                        {result.end_date && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Ends: {new Date(result.end_date).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                </>
+              )}
+              {(jobStatus.status === 'done' || jobStatus.status === 'timeout') && (
+                <>
+                  <h3 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                    Extraction complete!
+                  </h3>
+                  <p className="text-base text-green-700 dark:text-green-300">
+                    {jobStatus.step || 'Redirecting to dashboard...'}
+                  </p>
+                </>
+              )}
+              {jobStatus.status === 'error' && (
+                <>
+                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">Extraction failed</h3>
+                  <p className="text-base text-red-800 dark:text-red-300">{jobStatus.error}</p>
+                </>
               )}
             </div>
-          )}
-
-          {!searchResults.isLoading && !searchResults.data && debouncedQuery.length >= 2 && (
-            <div className="card text-center py-8 text-gray-600 dark:text-gray-400">
-              Loading results...
-            </div>
-          )}
-
-          {debouncedQuery.length < 2 && searchQuery.length > 0 && (
-            <div className="card text-center py-8 text-gray-600 dark:text-gray-400">
-              Enter at least 2 characters to search
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* URL Tab */}
-      {activeTab === 'url' && (
-        <div className="space-y-6">
-          {/* URL Form */}
-          <form onSubmit={handleExtractSubmit} className="card space-y-6">
-            <div>
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Polymarket URL *
-              </label>
-              <input
-                type="url"
-                required
-                placeholder="https://polymarket.com/event/... or https://polymarket.com/market/..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="input w-full"
-              />
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Enter a Polymarket event or market URL
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Orderbook Depth
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={depth}
-                  onChange={(e) => setDepth(parseInt(e.target.value))}
-                  className="input w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Levels per side (1-50)
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Fidelity (minutes)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={fidelity}
-                  onChange={(e) => setFidelity(parseInt(e.target.value))}
-                  className="input w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Price history granularity
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Base Rate
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={baseRate}
-                  onChange={(e) => setBaseRate(parseFloat(e.target.value))}
-                  className="input w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Prior probability (0-1)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                This will fetch orderbook, price history, and compute analytics
-              </p>
-              <button
-                type="submit"
-                disabled={mutation.isPending || !url}
-                className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 w-full sm:w-auto"
-              >
-                {mutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Extracting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>Extract Data</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* Job Status */}
-          {jobStatus && (
-            <div className={`card border ${
-              jobStatus.status === 'done' || jobStatus.status === 'timeout'
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                : jobStatus.status === 'error'
-                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-            }`}>
-              <div className="flex items-start space-x-3">
-                {jobStatus.status === 'running' && <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 animate-spin" />}
-                {jobStatus.status === 'done' && <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />}
-                {jobStatus.status === 'error' && <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />}
-                <div className="flex-1">
-                  {jobStatus.status === 'running' && (
-                    <>
-                      <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                        Extracting {jobStatus.markets_found} market(s)...
-                      </h3>
-                      <p className="text-base text-blue-800 dark:text-blue-300 mb-2">
-                        {jobStatus.step || 'Initializing...'}
-                      </p>
-                      <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-1.5">
-                        <div className="bg-blue-600 h-1.5 rounded-full animate-pulse" style={{width: '100%'}}></div>
-                      </div>
-                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                        This typically takes 30–90 seconds for large events.
-                      </p>
-                    </>
-                  )}
-                  {jobStatus.status === 'done' && (
-                    <>
-                      <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                        Successfully extracted {jobStatus.markets_processed || jobStatus.markets_found} market(s)!
-                      </h3>
-                      <p className="text-base text-green-700 dark:text-green-300">
-                        Redirecting to dashboard...
-                      </p>
-                    </>
-                  )}
-                  {jobStatus.status === 'timeout' && (
-                    <>
-                      <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                        Extraction completed!
-                      </h3>
-                      <p className="text-base text-green-700 dark:text-green-300 mb-2">
-                        {jobStatus.step}
-                      </p>
-                      <Link to="/" className="inline-flex items-center text-base font-medium text-green-700 dark:text-green-300 underline">
-                        Go to Dashboard →
-                      </Link>
-                    </>
-                  )}
-                  {jobStatus.status === 'error' && (
-                    <>
-                      <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">Extraction failed</h3>
-                      <p className="text-base text-red-800 dark:text-red-300">{jobStatus.error}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Error Result */}
-          {mutation.isError && (
-            <div className="card bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-              <div className="flex items-start space-x-3">
-                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
-                    {(() => {
-                      const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
-                      if (detail.toLowerCase().includes('no markets found')) return '🏁 Market Not Found'
-                      if (detail.toLowerCase().includes('network') || detail.toLowerCase().includes('econnrefused')) return '🔌 Connection Error'
-                      if (detail.toLowerCase().includes('resolved') || detail.toLowerCase().includes('closed')) return '🏁 Market Already Resolved'
-                      return '⚠️ Extraction Failed'
-                    })()}
-                  </h3>
-                  <p className="text-base text-red-800 dark:text-red-300">
-                    {(() => {
-                      const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
-                      if (detail.toLowerCase().includes('no markets found'))
-                        return 'No active markets were found at this URL. The event may have ended, been resolved, or the URL may be incorrect.'
-                      if (detail.toLowerCase().includes('network') || !mutation.error.response)
-                        return 'Unable to reach the server. Please check your connection and try again in a few seconds.'
-                      if (detail.toLowerCase().includes('resolved') || detail.toLowerCase().includes('closed'))
-                        return 'This market is no longer active. The event has already ended or been resolved, so results can\'t be extracted anymore.'
-                      return detail || 'Something went wrong. Please try again with a different URL.'
-                    })()}
-                  </p>
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                    💡 Try an active market at <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="underline">polymarket.com</a>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions */}
-          <div className="card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">
-              How to use
-            </h3>
-            <ol className="space-y-2 text-base text-blue-800 dark:text-blue-300">
-              <li className="flex items-start">
-                <span className="font-bold mr-2">1.</span>
-                <span>Copy a Polymarket event or market URL (e.g., https://polymarket.com/event/...)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="font-bold mr-2">2.</span>
-                <span>Paste the URL in the field above</span>
-              </li>
-              <li className="flex items-start">
-                <span className="font-bold mr-2">3.</span>
-                <span>Adjust extraction parameters if needed</span>
-              </li>
-              <li className="flex items-start">
-                <span className="font-bold mr-2">4.</span>
-                <span>Click "Extract Data" to fetch and analyze the market(s)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="font-bold mr-2">5.</span>
-                <span>View the extracted markets in the dashboard or click the links above</span>
-              </li>
-            </ol>
           </div>
         </div>
       )}
+
+      {/* Mutation Error */}
+      {mutation.isError && (
+        <div className="card bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+          <div className="flex items-start space-x-3">
+            <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
+                {(() => {
+                  const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
+                  if (detail.toLowerCase().includes('no markets found')) return '🏁 Market Not Found'
+                  if (detail.toLowerCase().includes('network') || detail.toLowerCase().includes('econnrefused')) return '🔌 Connection Error'
+                  if (detail.toLowerCase().includes('resolved') || detail.toLowerCase().includes('closed')) return '🏁 Market Already Resolved'
+                  return '⚠️ Extraction Failed'
+                })()}
+              </h3>
+              <p className="text-base text-red-800 dark:text-red-300">
+                {(() => {
+                  const detail = mutation.error.response?.data?.detail || mutation.error.message || ''
+                  if (detail.toLowerCase().includes('no markets found'))
+                    return 'No active markets were found at this URL. The event may have ended or the URL may be incorrect.'
+                  if (detail.toLowerCase().includes('network') || !mutation.error.response)
+                    return 'Unable to reach the server. Please check your connection and try again.'
+                  if (detail.toLowerCase().includes('resolved') || detail.toLowerCase().includes('closed'))
+                    return 'This market is no longer active and cannot be extracted.'
+                  return detail || 'Something went wrong. Please try again with a different URL.'
+                })()}
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                💡 Try an active market at{' '}
+                <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="underline">
+                  polymarket.com
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* How to use */}
+      <div className="card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">How to use</h3>
+        <ol className="space-y-2 text-base text-blue-800 dark:text-blue-300">
+          <li className="flex items-start gap-2">
+            <span className="font-bold">1.</span>
+            <span>Go to <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer" className="underline">polymarket.com</a> and find an event or market</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">2.</span>
+            <span>Copy the URL from your browser address bar</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">3.</span>
+            <span>Paste it above and click <strong>Extract Data</strong></span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">4.</span>
+            <span>You'll be redirected to the dashboard once extraction is complete</span>
+          </li>
+        </ol>
+      </div>
     </div>
   )
 }
