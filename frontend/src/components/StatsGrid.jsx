@@ -29,7 +29,7 @@ function StatsGrid({ market }) {
     },
     {
       label: 'Degen Risk',
-      value: degenRisk != null ? `${(degenRisk * 100).toFixed(0)}%` : 'N/A',
+      value: degenRisk != null ? `${(degenRisk * 100).toFixed(0)}%` : 'Low Risk',
       icon: AlertCircle,
       color: getRiskColor(degenRisk),
       bgColor: degenRisk == null || degenRisk < 0.3

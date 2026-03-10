@@ -56,7 +56,7 @@ const AITradingSignal = ({ marketId }) => {
 
   const action = signal.action || 'HOLD';
   const riskLevel = signal.risk_level || 'UNKNOWN';
-  const positionSize = signal.position_size || 'N/A';
+  const positionSize = signal.position_size || '—';
   const confidence = signal.confidence || 0;
 
   const getSignalConfig = () => {
