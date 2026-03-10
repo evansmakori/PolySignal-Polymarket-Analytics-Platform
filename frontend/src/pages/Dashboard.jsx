@@ -71,7 +71,16 @@ function EventCard({ event }) {
         <div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Best Score</div>
           <div className="font-semibold text-gray-900 dark:text-white">
-            {event.best_score != null ? parseFloat(event.best_score).toFixed(1) : 'N/A'}
+            {event.best_score != null
+              ? parseFloat(event.best_score).toFixed(1)
+              : <span className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 font-normal">
+                  <svg className="animate-spin w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                  Calculating…
+                </span>
+            }
           </div>
         </div>
         <div>
