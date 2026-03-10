@@ -28,7 +28,7 @@ ingress:
 services:
   - name: backend
     github:
-      repo: evansmakori/Predict_my_polymarket
+      repo: evansmakori/PolySignal-Polymarket-Analytics-Platform
       branch: main
       deploy_on_push: true
     source_dir: backend
@@ -101,7 +101,7 @@ services:
 
   - name: frontend
     github:
-      repo: evansmakori/Predict_my_polymarket
+      repo: evansmakori/PolySignal-Polymarket-Analytics-Platform
       branch: main
       deploy_on_push: true
     source_dir: frontend
