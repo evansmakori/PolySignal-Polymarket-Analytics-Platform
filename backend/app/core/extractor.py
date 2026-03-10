@@ -220,7 +220,7 @@ def assemble_market_stats(
     liq_inv = 1 - (liq_score / (1+liq_score))
     degen_risk = 0.45*spread_norm + 0.35*mom_norm + 0.20*liq_inv
 
-    return {
+    stats = {
         "market_id": str(market_id),
         "snapshot_ts": asof,
         "title": title,
@@ -320,6 +320,8 @@ def assemble_market_stats(
         "sentiment_momentum": slope,
         "liquidity_score": liq_score,
         "degen_risk": degen_risk,
+        "predictive_score": None,
+        "score_category": None,
     }
 
     # Calculate predictive score — always returns a meaningful value
@@ -334,15 +336,13 @@ def assemble_market_stats(
 
     # If score is None or too low (< 1.0) due to missing fields,
     # use a liquidity-based fallback so we always show a meaningful score
-    liq = _safe_float(stats.get("liquidity"), 0.0)
-    vol = _safe_float(stats.get("volume_total"), 0.0)
+    _liq = _safe_float(stats.get("liquidity"), 0.0)
+    _vol = _safe_float(stats.get("volume_total") or stats.get("volume") or 0, 0.0)
     if score_val is None or score_val < 1.0:
         try:
-            # Blend liquidity + volume into a 0-100 score
-            liq_score = min(100.0, max(0.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100))
-            vol_score = min(100.0, max(0.0, math.log10(max(vol, 1)) / math.log10(10_000_000) * 100))
-            score_val = round(liq_score * 0.6 + vol_score * 0.4, 2)
-            score_val = max(score_val, 1.0)  # always at least 1.0
+            _liq_score = min(100.0, max(0.0, math.log10(max(_liq, 1)) / math.log10(1_000_000) * 100))
+            _vol_score = min(100.0, max(0.0, math.log10(max(_vol, 1)) / math.log10(10_000_000) * 100))
+            score_val = round(max(1.0, _liq_score * 0.6 + _vol_score * 0.4), 2)
             score_cat = "Neutral / Watchlist"
         except Exception:
             score_val = 1.0
