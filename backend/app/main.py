@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
             async with pool.acquire() as conn:
                 null_markets = await conn.fetch("""
                     SELECT DISTINCT ON (market_id) market_id, liquidity, spread,
-                        volume_24h, volume_total, price_change_1d, volatility_1w
+                        volume_24h, volume_total, price_change_1d, volatility
                     FROM polymarket_market_stats
                     WHERE predictive_score IS NULL
                     ORDER BY market_id, snapshot_ts DESC
