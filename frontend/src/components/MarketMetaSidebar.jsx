@@ -1,4 +1,4 @@
-import { Calendar, Clock, Activity, DollarSign, Droplets, CheckCircle, XCircle, Clock3 } from 'lucide-react'
+import { Calendar, Activity, XCircle, Clock3 } from 'lucide-react'
 import { formatLargeNumber, formatDateTime } from '../utils/formatters'
 
 function MarketMetaSidebar({ market }) {
@@ -70,62 +70,6 @@ function MarketMetaSidebar({ market }) {
               </div>
               <div className="text-base font-medium text-gray-900 dark:text-white">
                 {formatDateTime(market.snapshot_ts)}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Volume & Liquidity */}
-      <div className="card">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Trading Metrics</h3>
-        
-        <div className="space-y-4">
-          {/* Total Volume */}
-          {market.volume !== null && market.volume !== undefined && (
-            <div>
-              <div className="flex items-center gap-2 text-base text-gray-500 dark:text-gray-400 mb-1">
-                <DollarSign className="w-4 h-4" />
-                <span>Total Volume</span>
-              </div>
-              <div className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-                {formatLargeNumber(market.volume)}
-              </div>
-              {market.volume_clob !== null && market.volume_clob !== undefined && (
-                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  CLOB: {formatLargeNumber(market.volume_clob)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Liquidity */}
-          {market.liquidity !== null && market.liquidity !== undefined && (
-            <div>
-              <div className="flex items-center gap-2 text-base text-gray-500 dark:text-gray-400 mb-1">
-                <Droplets className="w-4 h-4" />
-                <span>Liquidity</span>
-              </div>
-              <div className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">
-                {formatLargeNumber(market.liquidity)}
-              </div>
-              {market.liquidity_clob !== null && market.liquidity_clob !== undefined && (
-                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  CLOB: {formatLargeNumber(market.liquidity_clob)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Spread */}
-          {market.spread !== null && market.spread !== undefined && (
-            <div>
-              <div className="text-base text-gray-500 dark:text-gray-400 mb-1">Bid-Ask Spread</div>
-              <div className="text-xl font-semibold text-gray-900 dark:text-white">
-                ${market.spread.toFixed(4)}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {(market.spread * 100).toFixed(2)}¢
               </div>
             </div>
           )}
