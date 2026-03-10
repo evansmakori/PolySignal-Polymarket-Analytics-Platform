@@ -181,7 +181,7 @@ def resolve_markets_from_url(url: str) -> Tuple[List[Dict[str, Any]], Optional[D
 
     if kind == "event":
         event_obj = get_event_by_slug(slug)
-        raw_markets = [m for m in (event_obj.get("markets") or []) if not m.get("closed", False)]
+        raw_markets = list(event_obj.get("markets") or [])
         for m in raw_markets:
             m_full = m
             clob_ids = _normalize_clob_token_ids(m_full.get("clobTokenIds"))

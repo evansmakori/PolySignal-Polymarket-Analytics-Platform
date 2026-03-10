@@ -146,6 +146,12 @@ CREATE TABLE IF NOT EXISTS {TBL_STATS} (
     degen_risk           DOUBLE PRECISION,
     liquidity_score      DOUBLE PRECISION,
 
+    -- market status
+    active               BOOLEAN,
+    closed               BOOLEAN,
+    resolved             BOOLEAN,
+    automatically_resolved BOOLEAN,
+
     PRIMARY KEY (market_id, snapshot_ts)
 );
 """
@@ -251,6 +257,10 @@ async def ensure_tables() -> None:
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS event_id TEXT",
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS event_title TEXT",
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS event_slug TEXT",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS active BOOLEAN",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS closed BOOLEAN",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS resolved BOOLEAN",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS automatically_resolved BOOLEAN",
             ]:
                 try:
                     await conn.execute(alter_sql)
@@ -397,14 +407,15 @@ async def upsert_market_stats(stats: dict) -> None:
                 predictive_score, score_category,
                 price_change_1h, price_change_1d, price_change_1wk,
                 price_change_1mo, price_change_1yr,
-                degen_risk, liquidity_score
+                degen_risk, liquidity_score,
+                active, closed, resolved, automatically_resolved
             ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
                 $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
                 $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
                 $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
                 $41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-                $51,$52,$53,$54,$55,$56
+                $51,$52,$53,$54,$55,$56,$57,$58,$59,$60
             )
             ON CONFLICT (market_id, snapshot_ts) DO UPDATE SET
                 token_id_yes        = EXCLUDED.token_id_yes,
@@ -460,7 +471,11 @@ async def upsert_market_stats(stats: dict) -> None:
                 price_change_1mo    = EXCLUDED.price_change_1mo,
                 price_change_1yr    = EXCLUDED.price_change_1yr,
                 degen_risk          = EXCLUDED.degen_risk,
-                liquidity_score     = EXCLUDED.liquidity_score
+                liquidity_score     = EXCLUDED.liquidity_score,
+                active              = EXCLUDED.active,
+                closed              = EXCLUDED.closed,
+                resolved            = EXCLUDED.resolved,
+                automatically_resolved = EXCLUDED.automatically_resolved
             """,
             # --- $1 .. $51 ---
             stats.get("market_id"),
@@ -532,6 +547,11 @@ async def upsert_market_stats(stats: dict) -> None:
             # risk metrics
             _safe_float(stats.get("degen_risk")),
             _safe_float(stats.get("liquidity_score")),
+            # market status
+            _safe_bool(stats.get("active")),
+            _safe_bool(stats.get("closed")),
+            _safe_bool(stats.get("resolved")),
+            _safe_bool(stats.get("automatically_resolved")),
         )
 
 
