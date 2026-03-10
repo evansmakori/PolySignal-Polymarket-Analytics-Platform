@@ -522,6 +522,44 @@ async def get_market_trades(
     return [dict(r) for r in rows]
 
 
+@router.post("/events/lifecycle", response_model=Dict[str, Any])
+async def trigger_lifecycle_job():
+    """Manually trigger the lifecycle manager (admin use)."""
+    from ..core.lifecycle import update_lifecycle_status
+    counts = await update_lifecycle_status()
+    return {"success": True, "counts": counts}
+
+
+@router.get("/events/archived", response_model=List[Dict[str, Any]])
+async def list_archived_events(
+    limit: int = Query(50, ge=1, le=200),
+):
+    """List archived events (resolved > 30 days ago) for historical review."""
+    from ..core.database import get_pool
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT 
+                event_id,
+                event_title,
+                event_slug,
+                COUNT(*) as market_count,
+                SUM(volume_total) as total_volume,
+                SUM(liquidity) as total_liquidity,
+                MAX(snapshot_ts) as last_updated,
+                MAX(predictive_score) as best_score,
+                MAX(lifecycle_status) as lifecycle_status,
+                MAX(resolved_at) as resolved_at
+            FROM polymarket_market_stats
+            WHERE event_id IS NOT NULL
+            AND lifecycle_status = 'archived'
+            GROUP BY event_id, event_title, event_slug
+            ORDER BY resolved_at DESC NULLS LAST
+            LIMIT $1
+        """, limit)
+        return [dict(r) for r in rows]
+
+
 @router.get("/events", response_model=List[Dict[str, Any]])
 async def list_events(
     limit: int = Query(50, ge=1, le=200),
@@ -582,44 +620,6 @@ async def list_events(
                 LIMIT $1
             """, limit)
         return [dict(r) for r in rows]
-
-
-@router.get("/events/archived", response_model=List[Dict[str, Any]])
-async def list_archived_events(
-    limit: int = Query(50, ge=1, le=200),
-):
-    """List archived events (resolved > 30 days ago) for historical review."""
-    from ..core.database import get_pool
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT 
-                event_id,
-                event_title,
-                event_slug,
-                COUNT(*) as market_count,
-                SUM(volume_total) as total_volume,
-                SUM(liquidity) as total_liquidity,
-                MAX(snapshot_ts) as last_updated,
-                MAX(predictive_score) as best_score,
-                MAX(lifecycle_status) as lifecycle_status,
-                MAX(resolved_at) as resolved_at
-            FROM polymarket_market_stats
-            WHERE event_id IS NOT NULL
-            AND lifecycle_status = 'archived'
-            GROUP BY event_id, event_title, event_slug
-            ORDER BY resolved_at DESC NULLS LAST
-            LIMIT $1
-        """, limit)
-        return [dict(r) for r in rows]
-
-
-@router.post("/events/lifecycle", response_model=Dict[str, Any])
-async def trigger_lifecycle_job():
-    """Manually trigger the lifecycle manager (admin use)."""
-    from ..core.lifecycle import update_lifecycle_status
-    counts = await update_lifecycle_status()
-    return {"success": True, "counts": counts}
 
 
 @router.get("/events/{event_id}/markets", response_model=List[Dict[str, Any]])
