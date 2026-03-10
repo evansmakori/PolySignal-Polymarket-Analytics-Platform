@@ -13,50 +13,6 @@ from .api.websocket import router as websocket_router
 from .api.ai import router as ai_router
 
 
-async def _backfill_scores():
-    """Background task: fix any markets with NULL or near-zero predictive scores."""
-    import math
-    await asyncio.sleep(10)  # Wait for pool to be fully ready
-    try:
-        from .core.scoring import calculate_market_score
-        from .core.database import get_pool
-        pool = await get_pool()
-        async with pool.acquire() as conn:
-            null_markets = await conn.fetch("""
-                SELECT DISTINCT ON (market_id) market_id, liquidity, spread,
-                    volume_24h, volume_total, price_change_1d, volatility,
-                    expected_value, kelly_fraction, orderbook_imbalance,
-                    sentiment_momentum
-                FROM polymarket_market_stats
-                WHERE predictive_score IS NULL OR predictive_score < 1.0
-                ORDER BY market_id, snapshot_ts DESC
-            """)
-            updated = 0
-            for row in null_markets:
-                try:
-                    score_result = calculate_market_score(dict(row))
-                    score = score_result.get("score")
-                    category = score_result.get("category", "Neutral / Watchlist")
-                    liq = float(row.get("liquidity") or 1)
-                    vol = float(row.get("volume_total") or 1)
-                    if score is None or score < 1.0:
-                        liq_score = min(100.0, max(0.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100))
-                        vol_score = min(100.0, max(0.0, math.log10(max(vol, 1)) / math.log10(10_000_000) * 100))
-                        score = round(max(1.0, liq_score * 0.6 + vol_score * 0.4), 2)
-                        category = "Neutral / Watchlist"
-                    await conn.execute("""
-                        UPDATE polymarket_market_stats
-                        SET predictive_score = $1, score_category = $2
-                        WHERE market_id = $3 AND (predictive_score IS NULL OR predictive_score < 1.0)
-                    """, score, category, row["market_id"])
-                    updated += 1
-                except Exception:
-                    pass
-            if updated:
-                print(f"✓ Backfilled scores for {updated} markets")
-    except Exception as e:
-        print(f"⚠ Score backfill warning: {e}")
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,12 +36,11 @@ async def lifespan(app: FastAPI):
         print("✓ Database tables ensured")
 
         # Start daily lifecycle manager background job
-        from .core.lifecycle import run_daily_lifecycle_job
+        from .core.lifecycle import run_daily_lifecycle_job, run_score_backfill_job
         asyncio.create_task(run_daily_lifecycle_job())
+        asyncio.create_task(run_score_backfill_job())
         print("✓ Lifecycle manager started")
-
-        # Backfill NULL/low scores in background — doesn't block startup
-        asyncio.create_task(_backfill_scores())
+        print("✓ Score backfill job started (runs every 5 minutes)")
     except Exception as e:
         print(f"⚠ Database initialization warning: {e}")
     yield

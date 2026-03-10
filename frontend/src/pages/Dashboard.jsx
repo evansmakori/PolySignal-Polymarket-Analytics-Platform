@@ -111,6 +111,11 @@ function Dashboard() {
     queryKey: ['events', search],
     queryFn: () => marketsApi.getEvents({ search: search || undefined, limit: 100 }),
     staleTime: 60_000,
+    // Auto-refresh every 15s if any event is still calculating its score
+    refetchInterval: (data) => {
+      const hasNullScores = data?.some(e => e.best_score == null)
+      return hasNullScores ? 15_000 : false
+    },
   })
 
   const filtered = events?.filter(e =>
