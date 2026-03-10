@@ -25,7 +25,7 @@ function Layout({ children }) {
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3 min-w-0" onClick={closeMobileMenu}>
               <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
               <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
-                <span className="hidden xs:inline">Polymarket </span>Dashboard
+                PolySignal Dashboard
               </h1>
             </Link>
 
