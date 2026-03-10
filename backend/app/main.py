@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Polymarket Trading Dashboard API",
+    title="PolySignal — Polymarket Analytics Platform API",
     description="Real-time analytics and trading signals for Polymarket prediction markets",
     version="1.0.0",
     docs_url="/docs",
@@ -78,7 +78,7 @@ app.include_router(ai_router)
 async def root():
     """Root endpoint - API information."""
     return {
-        "name": "Polymarket Trading Dashboard API",
+        "name": "PolySignal — Polymarket Analytics Platform API",
         "version": "1.0.0",
         "status": "running",
         "docs": "/docs",

@@ -1,4 +1,4 @@
-name: polymarket-dashboard
+name: polysignal
 region: nyc
 
 
@@ -44,9 +44,24 @@ services:
       success_threshold: 1
       failure_threshold: 5
     envs:
-      - key: DATABASE_URL
+      - key: DB_HOST
         scope: RUN_TIME
-        type: SECRET
+        value: "db-postgresql-nyc1-60694-do-user-34305223-0.j.db.ondigitalocean.com"
+      - key: DB_PORT
+        scope: RUN_TIME
+        value: "25060"
+      - key: DB_USER
+        scope: RUN_TIME
+        value: "doadmin"
+      - key: DB_PASSWORD
+        scope: RUN_TIME
+        value: "${DB_PASSWORD}"
+      - key: DB_NAME
+        scope: RUN_TIME
+        value: "defaultdb"
+      - key: DB_SSLMODE
+        scope: RUN_TIME
+        value: "require"
       - key: API_HOST
         value: "0.0.0.0"
         scope: RUN_TIME
