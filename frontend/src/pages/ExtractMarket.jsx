@@ -70,7 +70,7 @@ function ExtractMarket() {
           Extract Market Data
         </h1>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-          Paste a Polymarket URL to analyze and track a market or event.
+          Paste a Polymarket URL to analyze markets.
         </p>
       </div>
 
