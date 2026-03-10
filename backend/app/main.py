@@ -38,6 +38,43 @@ async def lifespan(app: FastAPI):
         from .core.lifecycle import run_daily_lifecycle_job
         asyncio.create_task(run_daily_lifecycle_job())
         print("✓ Lifecycle manager started")
+
+        # Backfill any markets with NULL predictive_score on startup
+        try:
+            from .core.scoring import calculate_market_score
+            from .core.database import get_pool
+            pool = await get_pool()
+            async with pool.acquire() as conn:
+                null_markets = await conn.fetch("""
+                    SELECT DISTINCT ON (market_id) market_id, liquidity, spread,
+                        volume_24h, volume_total, price_change_1d, volatility_1w
+                    FROM polymarket_market_stats
+                    WHERE predictive_score IS NULL
+                    ORDER BY market_id, snapshot_ts DESC
+                """)
+                updated = 0
+                for row in null_markets:
+                    try:
+                        score_result = calculate_market_score(dict(row))
+                        score = score_result.get("score")
+                        category = score_result.get("category", "Neutral / Watchlist")
+                        if score is None:
+                            import math
+                            liq = float(row.get("liquidity") or 1)
+                            score = round(min(100.0, max(1.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100)), 2)
+                            category = "Neutral / Watchlist"
+                        await conn.execute("""
+                            UPDATE polymarket_market_stats
+                            SET predictive_score = $1, score_category = $2
+                            WHERE market_id = $3 AND predictive_score IS NULL
+                        """, score, category, row["market_id"])
+                        updated += 1
+                    except Exception:
+                        pass
+                if updated:
+                    print(f"✓ Backfilled scores for {updated} markets with NULL scores")
+        except Exception as e:
+            print(f"⚠ Score backfill warning: {e}")
     except Exception as e:
         print(f"⚠ Database initialization warning: {e}")
     yield
