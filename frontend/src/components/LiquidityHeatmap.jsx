@@ -217,16 +217,16 @@ function LiquidityHeatmap({ orderbook }) {
       </div>
 
       {/* Cumulative Depth Stats */}
-      <div className="mt-4 grid grid-cols-2 gap-4 text-base">
-        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Bid Depth</div>
-          <div className="text-xl font-bold text-green-700 dark:text-green-400">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-4 text-sm sm:text-base">
+        <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Bid Depth</div>
+          <div className="text-base sm:text-xl font-bold text-green-700 dark:text-green-400">
             {cumulativeDepth[cumulativeDepth.length - 1]?.bidCumulative.toFixed(0) || 0}
           </div>
         </div>
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Ask Depth</div>
-          <div className="text-xl font-bold text-red-700 dark:text-red-400">
+        <div className="p-2 sm:p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Ask Depth</div>
+          <div className="text-base sm:text-xl font-bold text-red-700 dark:text-red-400">
             {cumulativeDepth[cumulativeDepth.length - 1]?.askCumulative.toFixed(0) || 0}
           </div>
         </div>

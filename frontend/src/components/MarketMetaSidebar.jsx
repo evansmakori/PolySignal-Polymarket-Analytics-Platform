@@ -88,7 +88,7 @@ function MarketMetaSidebar({ market }) {
                 <DollarSign className="w-4 h-4" />
                 <span>Total Volume</span>
               </div>
-              <div className="text-4xl font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">
                 {formatLargeNumber(market.volume)}
               </div>
               {market.volume_clob !== null && market.volume_clob !== undefined && (
@@ -106,7 +106,7 @@ function MarketMetaSidebar({ market }) {
                 <Droplets className="w-4 h-4" />
                 <span>Liquidity</span>
               </div>
-              <div className="text-4xl font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">
                 {formatLargeNumber(market.liquidity)}
               </div>
               {market.liquidity_clob !== null && market.liquidity_clob !== undefined && (

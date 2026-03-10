@@ -138,64 +138,66 @@ function MarketDetail() {
         </Link>
       </div>
     }>
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Back Button */}
-      <Link to="/" className="inline-flex items-center text-primary-600 hover:text-primary-700">
+      <Link to="/" className="inline-flex items-center text-primary-600 hover:text-primary-700 text-sm sm:text-base">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Dashboard
       </Link>
 
       {/* Header */}
       <div className="card">
-        <div className="space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
                 {displayData.title}
               </h1>
-              {displayData.category && (
-                <span className="inline-block px-3 py-1 text-base rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 mr-2">
-                  {displayData.category}
-                </span>
-              )}
-              {/* Trade Signal */}
-              {displayData.trade_signal && (
-                <span className={`inline-block px-3 py-1 text-base rounded-full font-semibold mr-2 ${getSignalColor(displayData.trade_signal)}`}>
-                  {displayData.trade_signal === 'long' ? '📈 Long' : displayData.trade_signal === 'short' ? '📉 Short' : '⏸ No Trade'}
-                </span>
-              )}
-              {/* Degen Risk */}
-              {displayData.degen_risk != null && (
-                <span className={`inline-block px-3 py-1 text-base rounded-full font-semibold ${
-                  displayData.degen_risk < 0.3 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                  displayData.degen_risk < 0.6 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                }`}>
-                  🎲 Degen Risk: {(displayData.degen_risk * 100).toFixed(0)}%
-                </span>
-              )}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {displayData.category && (
+                  <span className="inline-block px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    {displayData.category}
+                  </span>
+                )}
+                {/* Trade Signal */}
+                {displayData.trade_signal && (
+                  <span className={`inline-block px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full font-semibold ${getSignalColor(displayData.trade_signal)}`}>
+                    {displayData.trade_signal === 'long' ? '📈 Long' : displayData.trade_signal === 'short' ? '📉 Short' : '⏸ No Trade'}
+                  </span>
+                )}
+                {/* Degen Risk */}
+                {displayData.degen_risk != null && (
+                  <span className={`inline-block px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-full font-semibold ${
+                    displayData.degen_risk < 0.3 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                    displayData.degen_risk < 0.6 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
+                    🎲 Degen Risk: {(displayData.degen_risk * 100).toFixed(0)}%
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Live Indicator */}
             {liveData && (
-              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900 rounded-full">
+              <div className="flex items-center space-x-1.5 px-2 sm:px-3 py-1 bg-green-100 dark:bg-green-900 rounded-full flex-shrink-0">
                 <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-green-800 dark:text-green-300">LIVE</span>
+                <span className="text-xs sm:text-sm font-medium text-green-800 dark:text-green-300">LIVE</span>
               </div>
             )}
           </div>
 
           {/* Timestamps */}
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             Last updated: {displayData.snapshot_ts ? formatDateTime(displayData.snapshot_ts) : 'N/A'}
           </div>
         </div>
       </div>
 
       {/* Main Grid Layout: Content + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Main Content Area */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-4 sm:space-y-6">
           {/* Risk Alerts */}
           <ErrorBoundary label="Risk Alerts">
             <RiskAlerts market={displayData} />
@@ -220,12 +222,12 @@ function MarketDetail() {
           </ErrorBoundary>
 
           {/* AI-Powered Features Section */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border-2 border-purple-200">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center space-x-2">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 sm:p-6 rounded-lg border-2 border-purple-200">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4 flex flex-wrap items-center gap-2">
               <span>🤖 AI-Powered Analysis</span>
-              <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">DigitalOcean GPU</span>
+              <span className="text-xs sm:text-sm bg-purple-600 text-white px-2 py-1 rounded">DigitalOcean GPU</span>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               <ErrorBoundary label="AI Prediction"><AIPrediction marketId={marketId} /></ErrorBoundary>
               <ErrorBoundary label="AI Sentiment"><AISentimentAnalysis marketId={marketId} /></ErrorBoundary>
               <ErrorBoundary label="AI Trading Signal"><AITradingSignal marketId={marketId} /></ErrorBoundary>
@@ -233,17 +235,17 @@ function MarketDetail() {
           </div>
 
           {/* Predictive Strength Score Section */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-6">
             <ErrorBoundary label="Score Breakdown"><ScoreBreakdownChart marketId={marketId} /></ErrorBoundary>
             <ErrorBoundary label="Score History"><ScoreHistoryChart marketId={marketId} /></ErrorBoundary>
           </div>
 
           {/* Analytics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
             {/* Fair Value & Expected Value */}
             <ErrorBoundary label="Valuation">
               <div className="card">
-                <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Valuation</h3>
+                <h3 className="text-base sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Valuation</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Fair Value</span>
@@ -270,7 +272,7 @@ function MarketDetail() {
             {/* Risk Metrics */}
             <ErrorBoundary label="Risk Metrics">
               <div className="card">
-                <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Risk Metrics</h3>
+                <h3 className="text-base sm:text-xl font-semibold mb-3 sm:mb-4 text-gray-900 dark:text-white">Risk Metrics</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Volatility (1w)</span>

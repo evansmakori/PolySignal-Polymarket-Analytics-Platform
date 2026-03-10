@@ -86,10 +86,10 @@ function ExtractMarket() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 dark:text-white">
           Extract Market Data
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
           Search for markets or paste a Polymarket URL to analyze
         </p>
       </div>
@@ -299,7 +299,7 @@ function ExtractMarket() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Orderbook Depth
@@ -352,14 +352,14 @@ function ExtractMarket() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-base text-gray-500 dark:text-gray-400">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                 This will fetch orderbook, price history, and compute analytics
               </p>
               <button
                 type="submit"
                 disabled={mutation.isPending || !url}
-                className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 w-full sm:w-auto"
               >
                 {mutation.isPending ? (
                   <>

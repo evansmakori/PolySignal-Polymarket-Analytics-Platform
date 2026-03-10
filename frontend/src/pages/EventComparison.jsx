@@ -46,13 +46,13 @@ function EventComparisonPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <BarChart2 className="w-8 h-8 text-primary-600" />
-          <h1 className="text-5xl font-bold text-gray-900 dark:text-white">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+          <BarChart2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
+          <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-gray-900 dark:text-white">
             Compare Markets
           </h1>
         </div>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
           Compare multiple outcome markets from the same event side-by-side
         </p>
       </div>
@@ -60,10 +60,10 @@ function EventComparisonPage() {
       {/* Input Section */}
       <div className="card">
         <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
             Enter Market IDs or Polymarket URL
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={input}
@@ -72,20 +72,22 @@ function EventComparisonPage() {
               placeholder="e.g., 0x1234abcd,0x5678efgh or https://polymarket.com/..."
               className="input flex-1"
             />
-            <button
-              onClick={handleSubmit}
-              className="btn btn-primary px-6"
-            >
-              Compare
-            </button>
-            {input && (
+            <div className="flex gap-2">
               <button
-                onClick={handleClear}
-                className="btn px-6 bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                onClick={handleSubmit}
+                className="btn btn-primary flex-1 sm:flex-none px-4 sm:px-6"
               >
-                Clear
+                Compare
               </button>
-            )}
+              {input && (
+                <button
+                  onClick={handleClear}
+                  className="btn flex-1 sm:flex-none px-4 sm:px-6 bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

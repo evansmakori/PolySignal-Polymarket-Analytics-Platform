@@ -26,7 +26,7 @@ function OrderbookView({ orderbook }) {
       <div>
         <h4 className="font-medium mb-3 text-gray-900 dark:text-white">{title}</h4>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Asks */}
           <div>
             <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-2">ASKS</p>

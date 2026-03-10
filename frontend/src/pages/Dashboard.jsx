@@ -13,13 +13,13 @@ function EventCard({ event }) {
       className="card hover:shadow-lg transition-shadow cursor-pointer group block"
     >
       <div className="flex items-start justify-between mb-3">
-        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2 flex-1 mr-2">
+        <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2 flex-1 mr-2">
           {event.event_title || 'Untitled Event'}
         </h3>
-        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary-600 flex-shrink-0 mt-0.5" />
+        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary-600 flex-shrink-0 mt-0.5" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mt-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3">
         <div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Markets</div>
           <div className="font-semibold text-gray-900 dark:text-white">{event.market_count}</div>
@@ -65,11 +65,11 @@ function Dashboard() {
 
   return (
     <ErrorBoundary>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Market Events</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Market Events</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
             {filtered.length} event{filtered.length !== 1 ? 's' : ''} extracted
           </p>
         </div>
@@ -82,7 +82,7 @@ function Dashboard() {
             placeholder="Search events..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
           />
         </div>
 
@@ -119,7 +119,7 @@ function Dashboard() {
 
         {/* Events Grid */}
         {!isLoading && filtered.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filtered.map(event => (
               <EventCard key={event.event_id} event={event} />
             ))}

@@ -41,16 +41,16 @@ function StatsGrid({ market }) {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       {stats.map((stat, index) => (
         <div key={index} className="card">
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className={`p-1.5 sm:p-2 rounded-lg ${stat.bgColor} flex-shrink-0`}>
+              <stat.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${stat.color}`} />
             </div>
-            <div>
-              <p className="text-base text-gray-500 dark:text-gray-400">{stat.label}</p>
-              <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{stat.label}</p>
+              <p className={`text-base sm:text-xl font-bold ${stat.color} truncate`}>{stat.value}</p>
             </div>
           </div>
         </div>

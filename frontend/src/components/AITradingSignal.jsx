@@ -137,7 +137,7 @@ const AITradingSignal = ({ marketId }) => {
       </div>
 
       {/* Confidence & Risk Badges */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {/* Confidence */}
         <div className="bg-white/70 p-3 rounded text-center">
           <p className="text-sm text-gray-600">Confidence</p>

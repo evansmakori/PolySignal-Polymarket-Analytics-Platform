@@ -34,23 +34,23 @@ function MarketCard({ market }) {
         )}
 
         {/* Prices */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">YES</p>
-            <p className="text-xl font-bold text-green-600 dark:text-green-400">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">YES</p>
+            <p className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
               {formatPercent(market.yes_price)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">NO</p>
-            <p className="text-xl font-bold text-red-600 dark:text-red-400">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">NO</p>
+            <p className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-400">
               {formatPercent(market.no_price)}
             </p>
           </div>
         </div>
 
         {/* Volume & Liquidity */}
-        <div className="grid grid-cols-2 gap-4 text-base">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 text-sm sm:text-base">
           <div>
             <p className="text-gray-500 dark:text-gray-400">Volume</p>
             <p className="font-semibold text-gray-900 dark:text-white">

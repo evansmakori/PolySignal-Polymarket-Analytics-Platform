@@ -121,7 +121,7 @@ function EventDetail() {
         </div>
 
         {/* Filters Row */}
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-2 sm:gap-3 items-center w-full">
           
           {/* Signal Dropdown */}
           <div className="relative" ref={signalDropdownRef}>

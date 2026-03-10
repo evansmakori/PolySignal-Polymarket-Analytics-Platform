@@ -198,7 +198,7 @@ function ScoreHistoryChart({ marketId }) {
 
       {/* Stats */}
       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-3 gap-4 text-center text-base">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center text-base">
           <div>
             <div className="text-gray-500 dark:text-gray-400 mb-1">Highest</div>
             <div className="font-semibold text-gray-900 dark:text-white">

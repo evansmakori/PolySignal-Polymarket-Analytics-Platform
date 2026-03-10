@@ -231,7 +231,7 @@ function UnifiedRiskScore({ market }) {
             <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Weighted Contributions to Total Risk:
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               {Object.entries(components).map(([key, component]) => (
                 <div key={key} className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">{component.name}:</span>

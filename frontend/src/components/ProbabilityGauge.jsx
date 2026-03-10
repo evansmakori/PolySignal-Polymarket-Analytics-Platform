@@ -183,7 +183,7 @@ function ProbabilityGauge({ probability, previousProbability = null, title = "YE
         <div className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Probability Bands
         </div>
-        <div className="grid grid-cols-4 gap-2 text-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
           <div className={`p-2 rounded text-center font-medium ${
             displayProb >= 0 && displayProb < 25 
               ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 ring-2 ring-red-500' 

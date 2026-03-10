@@ -105,10 +105,10 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
             to={`/market/${market.market_id}`}
             className="card hover:shadow-lg transition-all cursor-pointer group"
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3 sm:gap-4">
               {/* Rank Badge */}
               <div className="flex-shrink-0">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl ${
+                <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-base sm:text-xl ${
                   index < 3 
                     ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' 
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -119,9 +119,9 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
 
               {/* Market Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-2 sm:gap-4">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-primary-600 transition-colors">
+                    <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-2 group-hover:text-primary-600 transition-colors">
                       {market.title}
                     </h4>
                     {market.category && (
@@ -133,17 +133,17 @@ function RankedMarketsList({ filters = {}, showFilters = false }) {
 
                   {/* Score Badge */}
                   <div className="flex-shrink-0">
-                    <div className={`px-3 py-2 rounded-lg ${getScoreBadgeColor(market.predictive_strength_score)}`}>
-                      <div className="text-4xl font-bold text-center">
+                    <div className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg ${getScoreBadgeColor(market.predictive_strength_score)}`}>
+                      <div className="text-2xl sm:text-4xl font-bold text-center">
                         {market.predictive_strength_score?.toFixed(0)}
                       </div>
-                      <div className="text-sm text-center opacity-75">score</div>
+                      <div className="text-xs sm:text-sm text-center opacity-75">score</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Category & Metrics */}
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-base">
+                <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                   {/* Score Category */}
                   {market.score_category && (
                     <div className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
