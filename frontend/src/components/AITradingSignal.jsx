@@ -40,8 +40,14 @@ const AITradingSignal = ({ marketId }) => {
 
   if (error) {
     return (
-      <div className="bg-red-50 p-6 rounded-lg shadow border-2 border-red-200">
-        <p className="text-red-600">Error loading trading signal: {error}</p>
+      <div className="bg-gray-50 p-6 rounded-lg shadow border border-gray-200">
+        <div className="flex items-center space-x-3 mb-2">
+          <Pause className="w-5 h-5 text-gray-400" />
+          <h3 className="text-base font-semibold text-gray-600">Trading Signal Unavailable</h3>
+        </div>
+        <p className="text-sm text-gray-500">
+          We weren't able to generate a trading signal for this market right now. This usually happens when there isn't enough data yet. Check back soon!
+        </p>
       </div>
     );
   }
