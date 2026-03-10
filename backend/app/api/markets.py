@@ -624,6 +624,12 @@ async def list_events(
                     FROM polymarket_market_stats
                     WHERE event_id IS NOT NULL
                     ORDER BY market_id, snapshot_ts DESC
+                ),
+                best AS (
+                    SELECT market_id, MAX(predictive_score) as max_score
+                    FROM polymarket_market_stats
+                    WHERE event_id IS NOT NULL
+                    GROUP BY market_id
                 )
                 SELECT 
                     s.event_id,
@@ -633,11 +639,12 @@ async def list_events(
                     SUM(s.volume_total) as total_volume,
                     SUM(s.liquidity) as total_liquidity,
                     MAX(s.snapshot_ts) as last_updated,
-                    MAX(l.predictive_score) as best_score,
+                    MAX(COALESCE(l.predictive_score, b.max_score)) as best_score,
                     MAX(s.lifecycle_status) as lifecycle_status,
                     MAX(s.resolved_at) as resolved_at
                 FROM polymarket_market_stats s
                 JOIN latest l ON l.market_id = s.market_id AND l.event_id = s.event_id
+                JOIN best b ON b.market_id = s.market_id
                 WHERE s.event_id IS NOT NULL
                 AND (
                     s.lifecycle_status = 'active'
@@ -658,6 +665,12 @@ async def list_events(
                     FROM polymarket_market_stats
                     WHERE event_id IS NOT NULL
                     ORDER BY market_id, snapshot_ts DESC
+                ),
+                best AS (
+                    SELECT market_id, MAX(predictive_score) as max_score
+                    FROM polymarket_market_stats
+                    WHERE event_id IS NOT NULL
+                    GROUP BY market_id
                 )
                 SELECT 
                     s.event_id,
@@ -667,11 +680,12 @@ async def list_events(
                     SUM(s.volume_total) as total_volume,
                     SUM(s.liquidity) as total_liquidity,
                     MAX(s.snapshot_ts) as last_updated,
-                    MAX(l.predictive_score) as best_score,
+                    MAX(COALESCE(l.predictive_score, b.max_score)) as best_score,
                     MAX(s.lifecycle_status) as lifecycle_status,
                     MAX(s.resolved_at) as resolved_at
                 FROM polymarket_market_stats s
                 JOIN latest l ON l.market_id = s.market_id AND l.event_id = s.event_id
+                JOIN best b ON b.market_id = s.market_id
                 WHERE s.event_id IS NOT NULL
                 AND (
                     s.lifecycle_status = 'active'
