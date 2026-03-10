@@ -110,7 +110,7 @@ function Dashboard() {
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', search],
     queryFn: () => marketsApi.getEvents({ search: search || undefined, limit: 100 }),
-    staleTime: 60_000,
+    staleTime: 0,
     // Auto-refresh every 15s if any event is still calculating its score
     refetchInterval: (query) => {
       const data = query.state.data

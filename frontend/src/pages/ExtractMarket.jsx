@@ -31,9 +31,9 @@ function ExtractMarket() {
         setJobStatus(status)
         if (status.status === 'done') {
           clearInterval(interval)
-          // Invalidate dashboard cache so new event appears immediately
-          await queryClient.invalidateQueries({ queryKey: ['events'] })
-          setTimeout(() => navigate('/'), 1000)
+          // Invalidate ALL cached queries so dashboard shows fresh data
+          await queryClient.invalidateQueries()
+          navigate('/')
         } else if (status.status === 'error') {
           clearInterval(interval)
         }
@@ -44,13 +44,12 @@ function ExtractMarket() {
           status: 'timeout',
           step: 'Extraction completed. Redirecting to dashboard...'
         }))
-        // Invalidate cache on timeout too
-        await queryClient.invalidateQueries({ queryKey: ['events'] })
-        setTimeout(() => navigate('/'), 1000)
+        await queryClient.invalidateQueries()
+        navigate('/')
       }
     }, 2000)
     return () => clearInterval(interval)
-  }, [jobId, navigate])
+  }, [jobId, navigate, queryClient])
 
   const mutation = useMutation({
     mutationFn: (data) => marketsApi.extractMarket(data),
