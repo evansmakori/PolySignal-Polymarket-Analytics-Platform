@@ -87,36 +87,36 @@ function EventDetail() {
           <Link to="/" className="inline-flex items-center text-base text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Events
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">
             {event?.event_title || 'Event Markets'}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
             {markets?.length || 0} markets in this event
           </p>
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
           <div className="card text-center">
             <DollarSign className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-            <div className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
               {formatLargeNumber(markets?.reduce((s, m) => s + (m.volume_total || 0), 0))}
             </div>
-            <div className="text-sm text-gray-500">Total Volume</div>
+            <div className="text-xs sm:text-sm text-gray-500">Total Volume</div>
           </div>
           <div className="card text-center">
-            <BarChart2 className="w-5 h-5 text-green-600 mx-auto mb-1" />
-            <div className="text-xl font-bold text-gray-900 dark:text-white">
+            <BarChart2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 mx-auto mb-1" />
+            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
               {formatLargeNumber(markets?.reduce((s, m) => s + (m.liquidity || 0), 0))}
             </div>
-            <div className="text-sm text-gray-500">Total Liquidity</div>
+            <div className="text-xs sm:text-sm text-gray-500">Total Liquidity</div>
           </div>
           <div className="card text-center">
-            <TrendingUp className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-            <div className="text-xl font-bold text-gray-900 dark:text-white">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mx-auto mb-1" />
+            <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
               {markets?.length || 0}
             </div>
-            <div className="text-sm text-gray-500">Markets</div>
+            <div className="text-xs sm:text-sm text-gray-500">Markets</div>
           </div>
         </div>
 
@@ -137,7 +137,7 @@ function EventDetail() {
               <ChevronDown className="w-4 h-4" />
             </button>
             {signalDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+              <div className="absolute top-full left-0 mt-1 w-44 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
                 {Object.entries(signalLabels).map(([key, label]) => (
                   <button
                     key={key}
@@ -174,7 +174,7 @@ function EventDetail() {
               <ChevronDown className="w-4 h-4" />
             </button>
             {liquidityDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+              <div className="absolute top-full left-0 mt-1 w-52 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
                 {Object.entries(liquidityLabels).map(([key, label]) => (
                   <button
                     key={key}
@@ -197,12 +197,12 @@ function EventDetail() {
         </div>
 
         {/* Markets Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredMarkets.map(market => (
             <MarketCard key={market.market_id} market={market} />
           ))}
           {filteredMarkets.length === 0 && (
-            <div className="col-span-3 text-center py-12 text-gray-500 dark:text-gray-400">
+            <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
               No {signalFilter === 'all' ? '' : signalFilter} markets found.
             </div>
           )}

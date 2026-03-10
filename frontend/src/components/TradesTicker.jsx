@@ -54,20 +54,20 @@ export default function TradesTicker({ marketId }) {
           <p className="text-gray-600 dark:text-gray-400">No trades available</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-base">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <table className="w-full text-sm sm:text-base min-w-[280px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-left py-2 sm:py-3 px-3 sm:px-4 font-semibold text-gray-700 dark:text-gray-300">
                   Time
                 </th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-left py-2 sm:py-3 px-3 sm:px-4 font-semibold text-gray-700 dark:text-gray-300">
                   Side
                 </th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-right py-2 sm:py-3 px-3 sm:px-4 font-semibold text-gray-700 dark:text-gray-300">
                   Price
                 </th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-right py-2 sm:py-3 px-3 sm:px-4 font-semibold text-gray-700 dark:text-gray-300">
                   Size
                 </th>
               </tr>
@@ -78,19 +78,19 @@ export default function TradesTicker({ marketId }) {
                   key={idx}
                   className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50"
                 >
-                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                  <td className="py-2 sm:py-3 px-3 sm:px-4 text-gray-600 dark:text-gray-400 whitespace-nowrap">
                     {formatTime(trade.timestamp)}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-2 sm:py-3 px-3 sm:px-4">
                     <div className={`flex items-center gap-1 font-medium ${getSideColor(trade.side)}`}>
                       {getSideIcon(trade.side)}
                       <span className="capitalize">{trade.side}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-right text-gray-900 dark:text-white font-semibold">
+                  <td className="py-2 sm:py-3 px-3 sm:px-4 text-right text-gray-900 dark:text-white font-semibold whitespace-nowrap">
                     {(trade.price * 100).toFixed(2)}%
                   </td>
-                  <td className="py-3 px-4 text-right text-gray-900 dark:text-white font-semibold">
+                  <td className="py-2 sm:py-3 px-3 sm:px-4 text-right text-gray-900 dark:text-white font-semibold whitespace-nowrap">
                     ${trade.size ? (trade.size / 1000).toFixed(1) : '0'}K
                   </td>
                 </tr>

@@ -33,7 +33,7 @@ function PriceChart({ data, title = 'Price History' }) {
       const priceChange = previousPoint && previousPoint.price !== 0 ? ((price - previousPoint.price) / previousPoint.price) * 100 : null
 
       return (
-        <div className="bg-white dark:bg-gray-800 border-2 border-primary-500 dark:border-primary-400 rounded-lg shadow-xl p-4 min-w-[200px]">
+        <div className="bg-white dark:bg-gray-800 border-2 border-primary-500 dark:border-primary-400 rounded-lg shadow-xl p-4 min-w-[160px] max-w-[90vw]">
           {/* Date/Time */}
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-2 font-medium">
             {point.time}
