@@ -322,38 +322,28 @@ def assemble_market_stats(
         "degen_risk": degen_risk,
     }
 
-    # Calculate predictive score and add to stats
-    # Always compute — scoring handles None inputs gracefully
+    # Calculate predictive score — always returns a value, never None
+    score_val = None
+    score_cat = "Neutral / Watchlist"
     try:
         score_result = calculate_market_score(stats)
         score_val = score_result.get("score")
-        # If scoring returned None or 0 due to missing data, compute a fallback
-        # using only what we have (liquidity + spread at minimum)
-        if score_val is None:
-            from .scoring import calculate_predictive_strength_score
-            fallback = calculate_predictive_strength_score(
-                liquidity=_safe_float(stats.get("liquidity")),
-                spread=_safe_float(stats.get("spread")),
-            )
-            score_val = fallback.get("score")
-            score_cat = fallback.get("category")
-        else:
-            score_cat = score_result.get("category")
-        stats["predictive_score"] = score_val
-        stats["score_category"] = score_cat
+        score_cat = score_result.get("category", "Neutral / Watchlist")
     except Exception as e:
         print(f"⚠ Scoring failed for market {stats.get('market_id')}: {e}")
-        # Last resort: use liquidity-only score so we never return None
+
+    # Fallback: log-scale liquidity score if scoring returned None
+    if score_val is None:
         try:
             liq = _safe_float(stats.get("liquidity"), 0.0)
-            # Simple fallback: log-scale liquidity mapped to 0-100
-            import math
-            fallback_score = min(100.0, max(0.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100))
-            stats["predictive_score"] = round(fallback_score, 2)
-            stats["score_category"] = "Neutral / Watchlist"
+            score_val = round(min(100.0, max(1.0, math.log10(max(liq, 1)) / math.log10(1_000_000) * 100)), 2)
+            score_cat = "Neutral / Watchlist"
         except Exception:
-            stats["predictive_score"] = 0.0
-            stats["score_category"] = "Neutral / Watchlist"
+            score_val = 1.0
+            score_cat = "Neutral / Watchlist"
+
+    stats["predictive_score"] = score_val
+    stats["score_category"] = score_cat
 
     return stats
 
