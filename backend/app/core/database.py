@@ -261,6 +261,8 @@ async def ensure_tables() -> None:
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS closed BOOLEAN",
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS resolved BOOLEAN",
                 f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS automatically_resolved BOOLEAN",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS lifecycle_status TEXT DEFAULT 'active'",
+                f"ALTER TABLE {TBL_STATS} ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ",
             ]:
                 try:
                     await conn.execute(alter_sql)

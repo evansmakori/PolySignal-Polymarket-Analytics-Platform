@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Search, TrendingUp, DollarSign, BarChart2, ChevronRight, Calendar } from 'lucide-react'
+import { Search, TrendingUp, DollarSign, BarChart2, ChevronRight, Calendar, Archive } from 'lucide-react'
 import { marketsApi } from '../services/api'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { formatLargeNumber } from '../utils/formatters'
@@ -67,11 +67,20 @@ function Dashboard() {
     <ErrorBoundary>
       <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Market Events</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-            {filtered.length} event{filtered.length !== 1 ? 's' : ''} extracted
-          </p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Market Events</h1>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
+              {filtered.length} event{filtered.length !== 1 ? 's' : ''} · active & recently resolved
+            </p>
+          </div>
+          <Link
+            to="/archived"
+            className="inline-flex items-center gap-2 px-3 py-2 text-base text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            <Archive className="w-4 h-4" />
+            Archived Events
+          </Link>
         </div>
 
         {/* Search */}

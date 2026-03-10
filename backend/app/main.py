@@ -21,7 +21,6 @@ async def lifespan(app: FastAPI):
         from .core.database import get_pool
         pool = await get_pool()
         async with pool.acquire() as conn:
-            # Try to fix schema permissions (works if user is superuser or schema owner)
             try:
                 await conn.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
             except Exception:
@@ -33,6 +32,11 @@ async def lifespan(app: FastAPI):
         await ensure_tables()
         print("✓ PostgreSQL connection pool initialized")
         print("✓ Database tables ensured")
+
+        # Start daily lifecycle manager background job
+        from .core.lifecycle import run_daily_lifecycle_job
+        asyncio.create_task(run_daily_lifecycle_job())
+        print("✓ Lifecycle manager started")
     except Exception as e:
         print(f"⚠ Database initialization warning: {e}")
     yield

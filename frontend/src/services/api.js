@@ -164,6 +164,8 @@ export const marketsApi = {
 
   // Get markets for an event
   getEventMarkets: (eventId) => api.get(`/api/markets/events/${eventId}/markets`).then(r => r.data),
+  getArchivedEvents: (limit = 50) => api.get(`/api/markets/events/archived?limit=${limit}`).then(r => r.data),
+  triggerLifecycle: () => api.post('/api/markets/events/lifecycle').then(r => r.data),
 }
 
 // AI Features API

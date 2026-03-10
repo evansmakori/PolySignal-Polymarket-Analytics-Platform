@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
+import ArchivedEvents from './pages/ArchivedEvents'
 import MarketDetail from './pages/MarketDetail'
 import EventDetail from './pages/EventDetail'
 import ExtractMarket from './pages/ExtractMarket'
@@ -18,6 +19,7 @@ function App() {
           <Route path="/event/:eventId" element={<EventDetail />} />
           <Route path="/extract" element={<ExtractMarket />} />
           <Route path="/compare" element={<EventComparison />} />
+          <Route path="/archived" element={<ArchivedEvents />} />
         </Routes>
       </Layout>
     </Router>
