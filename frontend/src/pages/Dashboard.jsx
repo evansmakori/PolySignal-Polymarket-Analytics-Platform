@@ -71,7 +71,7 @@ function EventCard({ event }) {
         <div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Best Score</div>
           <div className="font-semibold text-gray-900 dark:text-white">
-            {event.best_score ? event.best_score.toFixed(1) : 'N/A'}
+            {event.best_score != null ? parseFloat(event.best_score).toFixed(1) : 'N/A'}
           </div>
         </div>
         <div>
