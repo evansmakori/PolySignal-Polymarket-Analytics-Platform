@@ -67,6 +67,7 @@ from .analytics import (
     compute_trade_signal,
     detect_late_overconfidence,
 )
+from .scoring import calculate_market_score
 from .database import (
     upsert_orderbook,
     upsert_history,
@@ -313,8 +314,19 @@ def assemble_market_stats(
         "base_rate_deviation": base_rate_deviation,
         "sentiment_momentum": slope,
         "liquidity_score": liq_score,
-        "degen_risk": degen_risk
+        "degen_risk": degen_risk,
     }
+
+    # Calculate predictive score and add to stats
+    try:
+        score_result = calculate_market_score(stats)
+        stats["predictive_score"] = score_result["score"]
+        stats["score_category"] = score_result["category"]
+    except Exception:
+        stats["predictive_score"] = None
+        stats["score_category"] = None
+
+    return stats
 
 
 async def extract_from_url(
