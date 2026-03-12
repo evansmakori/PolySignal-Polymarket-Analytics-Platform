@@ -33,7 +33,10 @@ function ExtractMarket() {
           clearInterval(interval)
           // Invalidate ALL cached queries so dashboard shows fresh data
           await queryClient.invalidateQueries()
-          const target = status.event_id ? `/?highlightEvent=${encodeURIComponent(status.event_id)}` : '/'
+          const params = new URLSearchParams()
+          if (status.event_id) params.set('highlightEvent', String(status.event_id))
+          if (status.event_slug) params.set('highlightSlug', String(status.event_slug))
+          const target = params.toString() ? `/?${params.toString()}` : '/'
           navigate(target)
         } else if (status.status === 'error') {
           clearInterval(interval)

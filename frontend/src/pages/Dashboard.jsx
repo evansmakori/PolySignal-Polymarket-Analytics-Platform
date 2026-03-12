@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity, Sparkles } from 'lucide-react'
@@ -32,14 +32,14 @@ function getLifecycleInfo(event) {
   }
 }
 
-function EventCard({ event, highlighted = false, cardRef = null }) {
+function EventCard({ event, highlighted = false }) {
   const lifecycle = getLifecycleInfo(event)
 
   return (
     <Link
-      ref={cardRef}
+      id={`event-card-${event.event_id}`}
       to={`/event/${event.event_id}`}
-      className={`card hover:shadow-lg transition-all cursor-pointer group block ${
+      className={`card hover:shadow-lg transition-all duration-500 cursor-pointer group block ${
         highlighted
           ? 'ring-2 ring-primary-500 shadow-xl bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24'
           : ''
@@ -116,7 +116,7 @@ function Dashboard() {
   const [search, setSearch] = useState('')
   const [liveEvents, setLiveEvents] = useState([])
   const [highlightedEventId, setHighlightedEventId] = useState(searchParams.get('highlightEvent') || null)
-  const eventRefs = useRef({})
+  const [highlightedEventSlug, setHighlightedEventSlug] = useState(searchParams.get('highlightSlug') || null)
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', search],
@@ -133,9 +133,9 @@ function Dashboard() {
 
   useEffect(() => {
     const highlightFromQuery = searchParams.get('highlightEvent')
-    if (highlightFromQuery) {
-      setHighlightedEventId(highlightFromQuery)
-    }
+    const highlightSlugFromQuery = searchParams.get('highlightSlug')
+    if (highlightFromQuery) setHighlightedEventId(highlightFromQuery)
+    if (highlightSlugFromQuery) setHighlightedEventSlug(highlightSlugFromQuery)
   }, [searchParams])
 
   useEffect(() => {
@@ -182,35 +182,57 @@ function Dashboard() {
   const sourceEvents = liveEvents.length > 0 ? liveEvents : (events || [])
 
   const filtered = useMemo(() => {
-    return sourceEvents.filter(e =>
+    const filteredEvents = sourceEvents.filter(e =>
       !search || (e.event_title || '').toLowerCase().includes(search.toLowerCase())
     )
-  }, [sourceEvents, search])
+
+    if (!highlightedEventId && !highlightedEventSlug) return filteredEvents
+
+    return [...filteredEvents].sort((a, b) => {
+      const aHighlighted = String(a.event_id) === String(highlightedEventId) || a.event_slug === highlightedEventSlug
+      const bHighlighted = String(b.event_id) === String(highlightedEventId) || b.event_slug === highlightedEventSlug
+      if (aHighlighted && !bHighlighted) return -1
+      if (!aHighlighted && bHighlighted) return 1
+      return 0
+    })
+  }, [sourceEvents, search, highlightedEventId, highlightedEventSlug])
 
   useEffect(() => {
-    if (!highlightedEventId || !filtered.length) return
-    const highlightedEvent = filtered.find(e => String(e.event_id) === String(highlightedEventId))
+    if ((!highlightedEventId && !highlightedEventSlug) || !filtered.length) return
+
+    const highlightedEvent = filtered.find(e =>
+      String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
+    )
     if (!highlightedEvent) return
 
-    const timer = setTimeout(() => {
-      eventRefs.current[highlightedEventId]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      })
-    }, 150)
+    let attempts = 0
+    const maxAttempts = 8
+    const interval = setInterval(() => {
+      const node = document.getElementById(`event-card-${highlightedEvent.event_id}`)
+      attempts += 1
+      if (node) {
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        clearInterval(interval)
+      } else if (attempts >= maxAttempts) {
+        clearInterval(interval)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }, 250)
 
     const clearTimer = setTimeout(() => {
       setHighlightedEventId(null)
+      setHighlightedEventSlug(null)
       const nextParams = new URLSearchParams(searchParams)
       nextParams.delete('highlightEvent')
+      nextParams.delete('highlightSlug')
       setSearchParams(nextParams, { replace: true })
     }, 8000)
 
     return () => {
-      clearTimeout(timer)
+      clearInterval(interval)
       clearTimeout(clearTimer)
     }
-  }, [highlightedEventId, filtered, searchParams, setSearchParams])
+  }, [highlightedEventId, highlightedEventSlug, filtered, searchParams, setSearchParams])
 
   return (
     <ErrorBoundary>
@@ -282,12 +304,9 @@ function Dashboard() {
               <EventCard
                 key={event.event_id}
                 event={event}
-                highlighted={String(event.event_id) === String(highlightedEventId)}
-                cardRef={(node) => {
-                  if (node) {
-                    eventRefs.current[event.event_id] = node
-                  }
-                }}
+                highlighted={
+                  String(event.event_id) === String(highlightedEventId) || event.event_slug === highlightedEventSlug
+                }
               />
             ))}
           </div>
