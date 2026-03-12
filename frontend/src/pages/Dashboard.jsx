@@ -41,7 +41,7 @@ function EventCard({ event, highlighted = false }) {
       to={`/event/${event.event_id}`}
       className={`card hover:shadow-lg transition-all duration-500 cursor-pointer group block ${
         highlighted
-          ? 'ring-2 ring-primary-500 shadow-xl bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24'
+          ? 'ring-2 ring-primary-500 shadow-xl shadow-primary-300/60 dark:shadow-primary-900/50 bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24 animate-pulse'
           : ''
       }`}
     >
