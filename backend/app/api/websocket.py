@@ -26,9 +26,18 @@ async def _get_dashboard_events(limit: int = 100):
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
-            WITH latest AS (
+            WITH latest_stats AS (
                 SELECT DISTINCT ON (market_id)
-                    market_id, event_id, predictive_score, snapshot_ts
+                    market_id,
+                    event_id,
+                    event_title,
+                    event_slug,
+                    volume_total,
+                    liquidity,
+                    snapshot_ts,
+                    predictive_score,
+                    lifecycle_status,
+                    resolved_at
                 FROM polymarket_market_stats
                 WHERE event_id IS NOT NULL
                 ORDER BY market_id, snapshot_ts DESC
@@ -40,27 +49,31 @@ async def _get_dashboard_events(limit: int = 100):
                 GROUP BY market_id
             )
             SELECT
-                s.event_id,
-                s.event_title,
-                s.event_slug,
-                COUNT(DISTINCT s.market_id) as market_count,
-                SUM(s.volume_total) as total_volume,
-                SUM(s.liquidity) as total_liquidity,
-                MAX(s.snapshot_ts) as last_updated,
-                MAX(COALESCE(l.predictive_score, b.max_score)) as best_score,
-                MAX(s.lifecycle_status) as lifecycle_status,
-                MAX(s.resolved_at) as resolved_at
-            FROM polymarket_market_stats s
-            JOIN latest l ON l.market_id = s.market_id AND l.event_id = s.event_id
-            JOIN best b ON b.market_id = s.market_id
-            WHERE s.event_id IS NOT NULL
-              AND (
-                    s.lifecycle_status = 'active'
-                    OR s.lifecycle_status IS NULL
-                    OR (s.lifecycle_status = 'resolved' AND s.resolved_at > NOW() - INTERVAL '30 days')
-              )
-              AND s.lifecycle_status != 'archived'
-            GROUP BY s.event_id, s.event_title, s.event_slug
+                ls.event_id,
+                ls.event_title,
+                ls.event_slug,
+                COUNT(*) as market_count,
+                SUM(ls.volume_total) as total_volume,
+                SUM(ls.liquidity) as total_liquidity,
+                MAX(ls.snapshot_ts) as last_updated,
+                MAX(COALESCE(ls.predictive_score, b.max_score)) as best_score,
+                CASE
+                    WHEN BOOL_OR(COALESCE(ls.lifecycle_status, 'active') = 'active') THEN 'active'
+                    WHEN BOOL_AND(ls.lifecycle_status = 'archived') THEN 'archived'
+                    ELSE 'resolved'
+                END as lifecycle_status,
+                CASE
+                    WHEN BOOL_OR(COALESCE(ls.lifecycle_status, 'active') = 'active') THEN NULL
+                    ELSE MAX(ls.resolved_at)
+                END as resolved_at
+            FROM latest_stats ls
+            JOIN best b ON b.market_id = ls.market_id
+            GROUP BY ls.event_id, ls.event_title, ls.event_slug
+            HAVING BOOL_OR(COALESCE(ls.lifecycle_status, 'active') = 'active')
+                OR (
+                    NOT BOOL_AND(ls.lifecycle_status = 'archived')
+                    AND MAX(ls.resolved_at) > NOW() - INTERVAL '7 days'
+                )
             ORDER BY total_volume DESC NULLS LAST
             LIMIT $1
         """, limit)

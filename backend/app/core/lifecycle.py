@@ -3,9 +3,9 @@ Automatic lifecycle management for extracted market events.
 
 Lifecycle states:
   active   → event is live and tradeable
-  resolved → event outcome finalized (shown on dashboard for 30 days)
-  archived → resolved > 30 days ago (hidden from dashboard, kept for analytics)
-  deleted  → resolved > 180 days ago (purged from DB)
+  resolved → event outcome finalized (shown on dashboard for 7 days)
+  archived → resolved > 7 days ago (hidden from dashboard, kept for analytics)
+  deleted  → archived for ~3 months after leaving the dashboard, then purged
 
 Runs daily as a background job.
 """
@@ -18,8 +18,8 @@ from .extractor import extract_from_url
 
 logger = logging.getLogger(__name__)
 
-ARCHIVE_AFTER_DAYS = 30    # resolved → archived after 30 days
-DELETE_AFTER_DAYS  = 180   # archived → deleted after 180 days
+ARCHIVE_AFTER_DAYS = 7     # resolved → archived after 7 days
+DELETE_AFTER_DAYS  = 97    # delete after ~7 days + 3 months total from resolution
 SCORE_BACKFILL_INTERVAL_SECONDS = 300
 ACTIVE_REFRESH_INTERVAL_SECONDS = 300
 ACTIVE_REFRESH_BATCH_SIZE = 10
@@ -29,8 +29,8 @@ async def update_lifecycle_status() -> dict:
     """
     Run lifecycle transitions:
     1. Mark resolved markets with resolved_at timestamp
-    2. Archive resolved events older than 30 days
-    3. Delete archived events older than 180 days
+    2. Archive resolved events older than 7 days
+    3. Delete archived events after ~3 months in archived storage
     Returns counts of affected rows.
     """
     pool = await get_pool()
@@ -41,11 +41,10 @@ async def update_lifecycle_status() -> dict:
             UPDATE {TBL_STATS}
             SET
                 lifecycle_status = 'resolved',
-                resolved_at = NOW()
+                resolved_at = COALESCE(resolved_at, end_date, NOW())
             WHERE
                 (resolved = true OR closed = true OR automatically_resolved = true)
-                AND lifecycle_status = 'active'
-                AND resolved_at IS NULL
+                AND (lifecycle_status = 'active' OR lifecycle_status IS NULL OR resolved_at IS NULL)
         """)
         counts["resolved"] = int(r1.split()[-1])
         if counts["resolved"]:

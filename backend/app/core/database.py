@@ -410,14 +410,16 @@ async def upsert_market_stats(stats: dict) -> None:
                 price_change_1h, price_change_1d, price_change_1wk,
                 price_change_1mo, price_change_1yr,
                 degen_risk, liquidity_score,
-                active, closed, resolved, automatically_resolved
+                active, closed, resolved, automatically_resolved,
+                lifecycle_status, resolved_at
             ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
                 $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
                 $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
                 $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,
                 $41,$42,$43,$44,$45,$46,$47,$48,$49,$50,
-                $51,$52,$53,$54,$55,$56,$57,$58,$59,$60
+                $51,$52,$53,$54,$55,$56,$57,$58,$59,$60,
+                $61,$62
             )
             ON CONFLICT (market_id, snapshot_ts) DO UPDATE SET
                 token_id_yes        = EXCLUDED.token_id_yes,
@@ -477,7 +479,9 @@ async def upsert_market_stats(stats: dict) -> None:
                 active              = EXCLUDED.active,
                 closed              = EXCLUDED.closed,
                 resolved            = EXCLUDED.resolved,
-                automatically_resolved = EXCLUDED.automatically_resolved
+                automatically_resolved = EXCLUDED.automatically_resolved,
+                lifecycle_status    = EXCLUDED.lifecycle_status,
+                resolved_at         = COALESCE(EXCLUDED.resolved_at, polymarket_market_stats.resolved_at)
             """,
             # --- $1 .. $51 ---
             stats.get("market_id"),
@@ -554,6 +558,23 @@ async def upsert_market_stats(stats: dict) -> None:
             _safe_bool(stats.get("closed")),
             _safe_bool(stats.get("resolved")),
             _safe_bool(stats.get("automatically_resolved")),
+            (
+                "resolved"
+                if _safe_bool(stats.get("resolved"))
+                or _safe_bool(stats.get("closed"))
+                or _safe_bool(stats.get("automatically_resolved"))
+                else "active"
+            ),
+            (
+                _to_ts(stats.get("resolved_at"))
+                or _to_ts(stats.get("end_date"))
+                if (
+                    _safe_bool(stats.get("resolved"))
+                    or _safe_bool(stats.get("closed"))
+                    or _safe_bool(stats.get("automatically_resolved"))
+                )
+                else None
+            ),
         )
 
 
