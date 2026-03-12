@@ -49,7 +49,7 @@ function EventDetail() {
   const event = markets?.[0]
   const activeMarkets = markets?.filter(m => !isResolvedMarket(m)) || []
   const resolvedMarkets = markets?.filter(m => isResolvedMarket(m)) || []
-  const sourceMarkets = showResolvedMarkets ? (markets || []) : activeMarkets
+  const sourceMarkets = showResolvedMarkets ? resolvedMarkets : activeMarkets
 
   const filteredMarkets = sourceMarkets.filter(m => {
     if (signalFilter !== 'all') {
@@ -102,8 +102,10 @@ function EventDetail() {
             {event?.event_title || 'Event Markets'}
           </h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-            {activeMarkets.length} active market{activeMarkets.length !== 1 ? 's' : ''}
-            {resolvedMarkets.length > 0 && ` · ${resolvedMarkets.length} resolved market${resolvedMarkets.length !== 1 ? 's' : ''} hidden by default`}
+            {showResolvedMarkets
+              ? `${resolvedMarkets.length} resolved market${resolvedMarkets.length !== 1 ? 's' : ''}`
+              : `${activeMarkets.length} active market${activeMarkets.length !== 1 ? 's' : ''}`}
+            {resolvedMarkets.length > 0 && !showResolvedMarkets && ` · ${resolvedMarkets.length} resolved market${resolvedMarkets.length !== 1 ? 's' : ''} hidden by default`}
           </p>
         </div>
 
@@ -135,7 +137,9 @@ function EventDetail() {
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-900/10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="text-sm text-amber-800 dark:text-amber-300">
-                Showing {activeMarkets.length} active market{activeMarkets.length !== 1 ? 's' : ''}. {resolvedMarkets.length} resolved market{resolvedMarkets.length !== 1 ? 's are' : ' is'} hidden by default.
+                {showResolvedMarkets
+                  ? `Showing ${resolvedMarkets.length} resolved market${resolvedMarkets.length !== 1 ? 's' : ''} only.`
+                  : `Showing ${activeMarkets.length} active market${activeMarkets.length !== 1 ? 's' : ''}. ${resolvedMarkets.length} resolved market${resolvedMarkets.length !== 1 ? 's are' : ' is'} hidden by default.`}
               </div>
               <button
                 type="button"
@@ -216,7 +220,7 @@ function EventDetail() {
           </div>
 
           <span className="text-base text-gray-500 dark:text-gray-400 ml-auto">
-            Showing {filteredMarkets.length} of {sourceMarkets.length} {showResolvedMarkets ? 'visible' : 'active'} markets
+            Showing {filteredMarkets.length} of {sourceMarkets.length} {showResolvedMarkets ? 'resolved' : 'active'} markets
           </span>
         </div>
 
@@ -227,7 +231,7 @@ function EventDetail() {
           {filteredMarkets.length === 0 && (
             <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
               {showResolvedMarkets
-                ? 'No markets match the current filters.'
+                ? 'No resolved markets match the current filters.'
                 : 'No active markets match the current filters.'}
             </div>
           )}
