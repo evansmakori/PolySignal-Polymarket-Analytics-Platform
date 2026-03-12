@@ -1,22 +1,32 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, DollarSign, BarChart2, ChevronDown, Droplets } from 'lucide-react'
+import { ArrowLeft, TrendingUp, DollarSign, BarChart2, ChevronDown, EyeOff, Eye } from 'lucide-react'
 import { marketsApi } from '../services/api'
 import MarketCard from '../components/MarketCard'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { formatLargeNumber } from '../utils/formatters'
 
+function isResolvedMarket(market) {
+  return !!(
+    market?.closed ||
+    market?.resolved ||
+    market?.automatically_resolved ||
+    market?.lifecycle_status === 'resolved' ||
+    market?.lifecycle_status === 'archived'
+  )
+}
+
 function EventDetail() {
   const { eventId } = useParams()
   const [signalFilter, setSignalFilter] = useState('all')
   const [liquidityFilter, setLiquidityFilter] = useState('all')
+  const [showResolvedMarkets, setShowResolvedMarkets] = useState(false)
   const [signalDropdownOpen, setSignalDropdownOpen] = useState(false)
   const [liquidityDropdownOpen, setLiquidityDropdownOpen] = useState(false)
   const signalDropdownRef = useRef(null)
   const liquidityDropdownRef = useRef(null)
 
-  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (signalDropdownRef.current && !signalDropdownRef.current.contains(e.target)) {
@@ -37,20 +47,22 @@ function EventDetail() {
   })
 
   const event = markets?.[0]
+  const activeMarkets = markets?.filter(m => !isResolvedMarket(m)) || []
+  const resolvedMarkets = markets?.filter(m => isResolvedMarket(m)) || []
+  const sourceMarkets = showResolvedMarkets ? (markets || []) : activeMarkets
 
-  const filteredMarkets = markets?.filter(m => {
-    // Signal filter
+  const filteredMarkets = sourceMarkets.filter(m => {
     if (signalFilter !== 'all') {
       if (signalFilter === 'none' && m.trade_signal && m.trade_signal !== 'no_trade') return false
       if (signalFilter !== 'none' && m.trade_signal !== signalFilter) return false
     }
-    // Liquidity filter
+
     const liq = m.liquidity || 0
     if (liquidityFilter === 'high' && liq < 100000) return false
     if (liquidityFilter === 'medium' && (liq < 10000 || liq >= 100000)) return false
     if (liquidityFilter === 'low' && liq >= 10000) return false
     return true
-  }) || []
+  })
 
   const signalLabels = {
     all: 'Signal: All',
@@ -82,7 +94,6 @@ function EventDetail() {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <Link to="/" className="inline-flex items-center text-base text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-4">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Events
@@ -91,11 +102,11 @@ function EventDetail() {
             {event?.event_title || 'Event Markets'}
           </h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-            {markets?.length || 0} markets in this event
+            {activeMarkets.length} active market{activeMarkets.length !== 1 ? 's' : ''}
+            {resolvedMarkets.length > 0 && ` · ${resolvedMarkets.length} resolved market${resolvedMarkets.length !== 1 ? 's' : ''} hidden by default`}
           </p>
         </div>
 
-        {/* Stats Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
           <div className="card text-center">
             <DollarSign className="w-5 h-5 text-blue-600 mx-auto mb-1" />
@@ -114,16 +125,31 @@ function EventDetail() {
           <div className="card text-center">
             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mx-auto mb-1" />
             <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
-              {markets?.length || 0}
+              {activeMarkets.length}
             </div>
-            <div className="text-xs sm:text-sm text-gray-500">Markets</div>
+            <div className="text-xs sm:text-sm text-gray-500">Active Markets</div>
           </div>
         </div>
 
-        {/* Filters Row */}
+        {resolvedMarkets.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-900/10">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-sm text-amber-800 dark:text-amber-300">
+                Showing {activeMarkets.length} active market{activeMarkets.length !== 1 ? 's' : ''}. {resolvedMarkets.length} resolved market{resolvedMarkets.length !== 1 ? 's are' : ' is'} hidden by default.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResolvedMarkets(prev => !prev)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 bg-white/70 dark:bg-amber-950/30 hover:bg-white dark:hover:bg-amber-950/50"
+              >
+                {showResolvedMarkets ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showResolvedMarkets ? 'Hide resolved markets' : 'Show resolved markets'}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 sm:gap-3 items-center w-full">
-          
-          {/* Signal Dropdown */}
           <div className="relative" ref={signalDropdownRef}>
             <button
               onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
@@ -148,8 +174,8 @@ function EventDetail() {
                   >
                     {label}
                     <span className="text-sm text-gray-400">
-                      ({key === 'all' ? markets?.length :
-                        markets?.filter(m => key === 'none'
+                      ({key === 'all' ? sourceMarkets.length :
+                        sourceMarkets.filter(m => key === 'none'
                           ? !m.trade_signal || m.trade_signal === 'no_trade'
                           : m.trade_signal === key
                         ).length || 0})
@@ -160,7 +186,6 @@ function EventDetail() {
             )}
           </div>
 
-          {/* Liquidity Dropdown */}
           <div className="relative" ref={liquidityDropdownRef}>
             <button
               onClick={() => setLiquidityDropdownOpen(!liquidityDropdownOpen)}
@@ -190,20 +215,20 @@ function EventDetail() {
             )}
           </div>
 
-          {/* Result count */}
           <span className="text-base text-gray-500 dark:text-gray-400 ml-auto">
-            Showing {filteredMarkets.length} of {markets?.length || 0} markets
+            Showing {filteredMarkets.length} of {sourceMarkets.length} {showResolvedMarkets ? 'visible' : 'active'} markets
           </span>
         </div>
 
-        {/* Markets Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredMarkets.map(market => (
             <MarketCard key={market.market_id} market={market} />
           ))}
           {filteredMarkets.length === 0 && (
             <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-              No {signalFilter === 'all' ? '' : signalFilter} markets found.
+              {showResolvedMarkets
+                ? 'No markets match the current filters.'
+                : 'No active markets match the current filters.'}
             </div>
           )}
         </div>
