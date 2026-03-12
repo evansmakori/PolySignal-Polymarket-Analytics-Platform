@@ -106,6 +106,8 @@ async def extract_market_data(
         "url": request.url,
         "markets_found": len(markets),
         "market_ids": [],
+        "event_id": str(event_obj.get("id")) if event_obj and event_obj.get("id") else None,
+        "event_slug": event_obj.get("slug") if event_obj else None,
         "error": None,
     }
 
@@ -123,6 +125,8 @@ async def extract_market_data(
             _extraction_jobs[job_id]["status"] = "done"
             _extraction_jobs[job_id]["step"] = "Complete!"
             _extraction_jobs[job_id]["market_ids"] = result.get("market_ids", [])
+            _extraction_jobs[job_id]["event_id"] = result.get("event_id") or _extraction_jobs[job_id].get("event_id")
+            _extraction_jobs[job_id]["event_slug"] = result.get("event_slug") or _extraction_jobs[job_id].get("event_slug")
             _extraction_jobs[job_id]["markets_processed"] = result.get("markets_processed", 0)
         except Exception as e:
             _extraction_jobs[job_id]["status"] = "error"
@@ -137,6 +141,8 @@ async def extract_market_data(
         "markets_found": len(markets),
         "message": f"Extracting {len(markets)} market(s) in background. Use job_id to poll status.",
         "market_ids": [str(m.get("id") or m.get("conditionId") or "") for m in markets],
+        "event_id": str(event_obj.get("id")) if event_obj and event_obj.get("id") else None,
+        "event_slug": event_obj.get("slug") if event_obj else None,
     }
 
 

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity, Sparkles } from 'lucide-react'
 import { createEventsWebSocket, marketsApi } from '../services/api'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { formatLargeNumber } from '../utils/formatters'
@@ -13,11 +13,11 @@ function getLifecycleInfo(event) {
 
   if (status === 'resolved' && resolvedAt) {
     const daysResolved = Math.floor((now - resolvedAt) / (1000 * 60 * 60 * 24))
-    const daysUntilArchive = 30 - daysResolved
+    const daysUntilArchive = 7 - daysResolved
     return {
       status: 'resolved',
       badge: { label: 'Resolved', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: <CheckCircle className="w-3 h-3" /> },
-      warning: daysUntilArchive <= 5 && daysUntilArchive > 0
+      warning: daysUntilArchive <= 2 && daysUntilArchive > 0
         ? { text: `Archives in ${daysUntilArchive} day${daysUntilArchive !== 1 ? 's' : ''}`, color: 'text-orange-500 dark:text-orange-400' }
         : daysUntilArchive <= 0
         ? { text: 'Archiving soon', color: 'text-red-500 dark:text-red-400' }
@@ -32,18 +32,29 @@ function getLifecycleInfo(event) {
   }
 }
 
-function EventCard({ event }) {
+function EventCard({ event, highlighted = false, cardRef = null }) {
   const lifecycle = getLifecycleInfo(event)
 
   return (
     <Link
+      ref={cardRef}
       to={`/event/${event.event_id}`}
-      className="card hover:shadow-lg transition-shadow cursor-pointer group block"
+      className={`card hover:shadow-lg transition-all cursor-pointer group block ${
+        highlighted
+          ? 'ring-2 ring-primary-500 shadow-xl bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24'
+          : ''
+      }`}
     >
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-2 gap-2">
         <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2 flex-1 mr-2">
           {event.event_title || 'Untitled Event'}
         </h3>
+        {highlighted && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 shrink-0">
+            <Sparkles className="w-3 h-3" />
+            New extract
+          </span>
+        )}
         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary-600 flex-shrink-0 mt-0.5" />
       </div>
 
@@ -101,8 +112,11 @@ function EventCard({ event }) {
 }
 
 function Dashboard() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [liveEvents, setLiveEvents] = useState([])
+  const [highlightedEventId, setHighlightedEventId] = useState(searchParams.get('highlightEvent') || null)
+  const eventRefs = useRef({})
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', search],
@@ -116,6 +130,13 @@ function Dashboard() {
       setLiveEvents(events)
     }
   }, [events])
+
+  useEffect(() => {
+    const highlightFromQuery = searchParams.get('highlightEvent')
+    if (highlightFromQuery) {
+      setHighlightedEventId(highlightFromQuery)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     let socket
@@ -166,6 +187,31 @@ function Dashboard() {
     )
   }, [sourceEvents, search])
 
+  useEffect(() => {
+    if (!highlightedEventId || !filtered.length) return
+    const highlightedEvent = filtered.find(e => String(e.event_id) === String(highlightedEventId))
+    if (!highlightedEvent) return
+
+    const timer = setTimeout(() => {
+      eventRefs.current[highlightedEventId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }, 150)
+
+    const clearTimer = setTimeout(() => {
+      setHighlightedEventId(null)
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('highlightEvent')
+      setSearchParams(nextParams, { replace: true })
+    }, 8000)
+
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(clearTimer)
+    }
+  }, [highlightedEventId, filtered, searchParams, setSearchParams])
+
   return (
     <ErrorBoundary>
       <div className="space-y-4 sm:space-y-6">
@@ -195,6 +241,12 @@ function Dashboard() {
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
           />
         </div>
+
+        {highlightedEventId && (
+          <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-900/40 dark:bg-primary-900/20 dark:text-primary-300">
+            Your newly extracted event is highlighted below.
+          </div>
+        )}
 
         {isLoading && sourceEvents.length === 0 && (
           <div className="flex items-center justify-center py-20">
@@ -227,7 +279,16 @@ function Dashboard() {
         {!isLoading && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filtered.map(event => (
-              <EventCard key={event.event_id} event={event} />
+              <EventCard
+                key={event.event_id}
+                event={event}
+                highlighted={String(event.event_id) === String(highlightedEventId)}
+                cardRef={(node) => {
+                  if (node) {
+                    eventRefs.current[event.event_id] = node
+                  }
+                }}
+              />
             ))}
           </div>
         )}

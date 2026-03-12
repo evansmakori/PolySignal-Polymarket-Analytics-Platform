@@ -33,7 +33,8 @@ function ExtractMarket() {
           clearInterval(interval)
           // Invalidate ALL cached queries so dashboard shows fresh data
           await queryClient.invalidateQueries()
-          navigate('/')
+          const target = status.event_id ? `/?highlightEvent=${encodeURIComponent(status.event_id)}` : '/'
+          navigate(target)
         } else if (status.status === 'error') {
           clearInterval(interval)
         }
@@ -56,7 +57,13 @@ function ExtractMarket() {
     onSuccess: (data) => {
       if (data.job_id) {
         setJobId(data.job_id)
-        setJobStatus({ status: 'running', markets_found: data.markets_found, market_ids: data.market_ids })
+        setJobStatus({
+          status: 'running',
+          markets_found: data.markets_found,
+          market_ids: data.market_ids,
+          event_id: data.event_id,
+          event_slug: data.event_slug,
+        })
       }
     },
   })

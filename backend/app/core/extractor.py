@@ -512,6 +512,8 @@ async def extract_from_url(
 
     executor.shutdown(wait=False)
     market_ids = [stats["market_id"] for stats in all_stats_rows]
+    event_ids = [stats.get("event_id") for stats in all_stats_rows if stats.get("event_id")]
+    event_slugs = [stats.get("event_slug") for stats in all_stats_rows if stats.get("event_slug")]
 
     # Check if any market had a null predictive_score
     had_null_scores = any(s.get("predictive_score") is None for s in all_stats_rows)
@@ -521,6 +523,8 @@ async def extract_from_url(
         "markets_processed": len(markets),
         "message": f"Extracted {len(markets)} market(s)",
         "market_ids": market_ids,
+        "event_id": event_ids[0] if event_ids else None,
+        "event_slug": event_slugs[0] if event_slugs else None,
         "from_cache": False,
         "had_null_scores": had_null_scores,
     }
