@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, TrendingUp, PlusCircle, Trophy, BarChart2, Menu, X } from 'lucide-react'
+import { Home, PlusCircle, Trophy, BarChart2, Menu, X } from 'lucide-react'
+import polymarketLogo from '../assets/Polymarket_logo.png'
 
 function Layout({ children }) {
   const location = useLocation()
@@ -23,9 +24,13 @@ function Layout({ children }) {
           <div className="flex justify-between items-center h-14 sm:h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2 sm:space-x-3 min-w-0" onClick={closeMobileMenu}>
-              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
+              <img
+                src={polymarketLogo}
+                alt="Polymarket"
+                className="h-8 sm:h-10 w-auto object-contain flex-shrink-0"
+              />
               <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
-                PolySignal Dashboard
+                PolySignal
               </h1>
             </Link>
 
