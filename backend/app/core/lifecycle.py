@@ -11,14 +11,18 @@ Runs daily as a background job.
 """
 import asyncio
 import logging
-from datetime import datetime, timezone
+from urllib.parse import quote
 
 from .database import get_pool, TBL_STATS
+from .extractor import extract_from_url
 
 logger = logging.getLogger(__name__)
 
 ARCHIVE_AFTER_DAYS = 30    # resolved → archived after 30 days
 DELETE_AFTER_DAYS  = 180   # archived → deleted after 180 days
+SCORE_BACKFILL_INTERVAL_SECONDS = 300
+ACTIVE_REFRESH_INTERVAL_SECONDS = 300
+ACTIVE_REFRESH_BATCH_SIZE = 10
 
 
 async def update_lifecycle_status() -> dict:
@@ -33,7 +37,6 @@ async def update_lifecycle_status() -> dict:
     counts = {"resolved": 0, "archived": 0, "deleted": 0}
 
     async with pool.acquire() as conn:
-        # 1. Mark markets as resolved if closed/resolved=true and no resolved_at yet
         r1 = await conn.execute(f"""
             UPDATE {TBL_STATS}
             SET
@@ -48,7 +51,6 @@ async def update_lifecycle_status() -> dict:
         if counts["resolved"]:
             logger.info(f"✓ Lifecycle: {counts['resolved']} markets marked as resolved")
 
-        # 2. Archive resolved events older than ARCHIVE_AFTER_DAYS
         r2 = await conn.execute(f"""
             UPDATE {TBL_STATS}
             SET lifecycle_status = 'archived'
@@ -60,7 +62,6 @@ async def update_lifecycle_status() -> dict:
         if counts["archived"]:
             logger.info(f"✓ Lifecycle: {counts['archived']} markets archived")
 
-        # 3. Delete archived events older than DELETE_AFTER_DAYS
         r3 = await conn.execute(f"""
             DELETE FROM {TBL_STATS}
             WHERE
@@ -78,8 +79,8 @@ async def run_score_backfill_job():
     """Background task that runs score backfill every 5 minutes."""
     import math
     from .scoring import calculate_market_score
-    from .database import get_pool
-    await asyncio.sleep(15)  # Wait for pool to be ready
+
+    await asyncio.sleep(15)
     while True:
         try:
             pool = await get_pool()
@@ -115,10 +116,77 @@ async def run_score_backfill_job():
                     except Exception:
                         pass
                 if updated:
-                    print(f"✓ Auto-backfill: fixed {updated} market scores")
+                    logger.info(f"✓ Auto-backfill: fixed {updated} market scores")
         except Exception as e:
-            print(f"⚠ Score backfill job error: {e}")
-        await asyncio.sleep(300)  # Run every 5 minutes
+            logger.warning(f"⚠ Score backfill job error: {e}")
+        await asyncio.sleep(SCORE_BACKFILL_INTERVAL_SECONDS)
+
+
+async def refresh_active_events(limit: int = ACTIVE_REFRESH_BATCH_SIZE) -> dict:
+    """Refresh a small batch of active extracted events from Polymarket."""
+    pool = await get_pool()
+    refreshed = 0
+    failed = 0
+    skipped = 0
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(f"""
+            WITH latest_events AS (
+                SELECT
+                    event_id,
+                    event_slug,
+                    MAX(snapshot_ts) AS last_synced,
+                    BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') AS is_active
+                FROM {TBL_STATS}
+                WHERE event_id IS NOT NULL
+                  AND event_slug IS NOT NULL
+                  AND event_slug != ''
+                GROUP BY event_id, event_slug
+            )
+            SELECT event_id, event_slug, last_synced
+            FROM latest_events
+            WHERE is_active = true
+            ORDER BY last_synced ASC NULLS FIRST
+            LIMIT $1
+        """, limit)
+
+    for row in rows:
+        slug = row["event_slug"]
+        if not slug:
+            skipped += 1
+            continue
+        try:
+            await extract_from_url(
+                url=f"https://polymarket.com/event/{quote(str(slug))}",
+                intervals=["1w"],
+                bypass_cache=True,
+            )
+            refreshed += 1
+        except Exception as e:
+            failed += 1
+            logger.warning(f"⚠ Active event refresh failed for {slug}: {e}")
+        await asyncio.sleep(1)
+
+    return {"refreshed": refreshed, "failed": failed, "skipped": skipped}
+
+
+async def run_active_event_refresh_job():
+    """Background task that keeps extracted active events synced with Polymarket."""
+    logger.info(
+        f"✓ Active event refresh job started (runs every {ACTIVE_REFRESH_INTERVAL_SECONDS // 60} minutes, batch size {ACTIVE_REFRESH_BATCH_SIZE})"
+    )
+    await asyncio.sleep(30)
+    while True:
+        try:
+            counts = await refresh_active_events()
+            if counts["refreshed"] or counts["failed"]:
+                logger.info(
+                    "✓ Active event sync complete: "
+                    f"refreshed={counts['refreshed']}, failed={counts['failed']}, skipped={counts['skipped']}"
+                )
+        except Exception as e:
+            logger.warning(f"⚠ Active event refresh job error: {e}")
+        await asyncio.sleep(ACTIVE_REFRESH_INTERVAL_SECONDS)
 
 
 async def run_daily_lifecycle_job():
@@ -135,5 +203,4 @@ async def run_daily_lifecycle_job():
             )
         except Exception as e:
             logger.warning(f"⚠ Lifecycle job error: {e}")
-        # Sleep 24 hours
         await asyncio.sleep(24 * 60 * 60)

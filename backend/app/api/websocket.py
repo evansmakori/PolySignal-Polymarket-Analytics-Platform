@@ -2,11 +2,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict, Set
 import asyncio
-import json
 import datetime
 
 from ..services.market_service import MarketService
 from ..models.market import MarketFilter
+from ..core.database import get_pool
 
 
 def _json_safe(obj):
@@ -17,44 +17,90 @@ def _json_safe(obj):
         return [_json_safe(v) for v in obj]
     if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
-    if isinstance(obj, float) and (obj != obj):  # NaN
+    if isinstance(obj, float) and (obj != obj):
         return None
     return obj
+
+
+async def _get_dashboard_events(limit: int = 100):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            WITH latest AS (
+                SELECT DISTINCT ON (market_id)
+                    market_id, event_id, predictive_score, snapshot_ts
+                FROM polymarket_market_stats
+                WHERE event_id IS NOT NULL
+                ORDER BY market_id, snapshot_ts DESC
+            ),
+            best AS (
+                SELECT market_id, MAX(predictive_score) as max_score
+                FROM polymarket_market_stats
+                WHERE event_id IS NOT NULL
+                GROUP BY market_id
+            )
+            SELECT
+                s.event_id,
+                s.event_title,
+                s.event_slug,
+                COUNT(DISTINCT s.market_id) as market_count,
+                SUM(s.volume_total) as total_volume,
+                SUM(s.liquidity) as total_liquidity,
+                MAX(s.snapshot_ts) as last_updated,
+                MAX(COALESCE(l.predictive_score, b.max_score)) as best_score,
+                MAX(s.lifecycle_status) as lifecycle_status,
+                MAX(s.resolved_at) as resolved_at
+            FROM polymarket_market_stats s
+            JOIN latest l ON l.market_id = s.market_id AND l.event_id = s.event_id
+            JOIN best b ON b.market_id = s.market_id
+            WHERE s.event_id IS NOT NULL
+              AND (
+                    s.lifecycle_status = 'active'
+                    OR s.lifecycle_status IS NULL
+                    OR (s.lifecycle_status = 'resolved' AND s.resolved_at > NOW() - INTERVAL '30 days')
+              )
+              AND s.lifecycle_status != 'archived'
+            GROUP BY s.event_id, s.event_title, s.event_slug
+            ORDER BY total_volume DESC NULLS LAST
+            LIMIT $1
+        """, limit)
+        return [dict(r) for r in rows]
+
 
 router = APIRouter()
 
 
 class ConnectionManager:
     """Manages WebSocket connections and broadcasting."""
-    
+
     def __init__(self):
         self.active_connections: Dict[str, Set[WebSocket]] = {}
-    
-    async def connect(self, websocket: WebSocket, market_id: str):
+
+    async def connect(self, websocket: WebSocket, key: str):
         await websocket.accept()
-        if market_id not in self.active_connections:
-            self.active_connections[market_id] = set()
-        self.active_connections[market_id].add(websocket)
-    
-    def disconnect(self, websocket: WebSocket, market_id: str):
-        if market_id in self.active_connections:
-            self.active_connections[market_id].discard(websocket)
-            if not self.active_connections[market_id]:
-                del self.active_connections[market_id]
-    
+        if key not in self.active_connections:
+            self.active_connections[key] = set()
+        self.active_connections[key].add(websocket)
+
+    def disconnect(self, websocket: WebSocket, key: str):
+        if key in self.active_connections:
+            self.active_connections[key].discard(websocket)
+            if not self.active_connections[key]:
+                del self.active_connections[key]
+
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         await websocket.send_json(message)
-    
-    async def broadcast(self, message: dict, market_id: str):
-        if market_id in self.active_connections:
+
+    async def broadcast(self, message: dict, key: str):
+        if key in self.active_connections:
             disconnected = set()
-            for connection in self.active_connections[market_id]:
+            for connection in self.active_connections[key]:
                 try:
                     await connection.send_json(message)
                 except Exception:
                     disconnected.add(connection)
             for connection in disconnected:
-                self.active_connections[market_id].discard(connection)
+                self.active_connections[key].discard(connection)
 
 
 manager = ConnectionManager()
@@ -62,12 +108,9 @@ manager = ConnectionManager()
 
 @router.websocket("/ws/markets/{market_id}")
 async def websocket_market_updates(websocket: WebSocket, market_id: str):
-    """
-    WebSocket endpoint for real-time market updates.
-    Sends updates every 10 seconds.
-    """
+    """WebSocket endpoint for real-time market updates."""
     await manager.connect(websocket, market_id)
-    
+
     try:
         market_data = await MarketService.get_market_by_id(market_id)
         if market_data:
@@ -76,7 +119,7 @@ async def websocket_market_updates(websocket: WebSocket, market_id: str):
             await manager.send_personal_message({"type": "error", "message": "Market not found"}, websocket)
             await websocket.close()
             return
-        
+
         while True:
             try:
                 await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
@@ -96,7 +139,7 @@ async def websocket_market_updates(websocket: WebSocket, market_id: str):
 async def websocket_all_markets(websocket: WebSocket):
     """WebSocket endpoint for updates on all markets."""
     await websocket.accept()
-    
+
     try:
         while True:
             try:
@@ -105,6 +148,29 @@ async def websocket_all_markets(websocket: WebSocket):
                 filters = MarketFilter(limit=100)
                 markets = await MarketService.get_markets(filters)
                 await websocket.send_json({"type": "markets_update", "data": _json_safe(markets)})
+            except WebSocketDisconnect:
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await websocket.close()
+
+
+@router.websocket("/ws/events")
+async def websocket_events(websocket: WebSocket):
+    """WebSocket endpoint for live dashboard event-card updates."""
+    await websocket.accept()
+
+    try:
+        initial = await _get_dashboard_events(limit=100)
+        await websocket.send_json({"type": "events_initial", "data": _json_safe(initial)})
+
+        while True:
+            try:
+                await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
+            except asyncio.TimeoutError:
+                events = await _get_dashboard_events(limit=100)
+                await websocket.send_json({"type": "events_update", "data": _json_safe(events)})
             except WebSocketDisconnect:
                 break
     except WebSocketDisconnect:

@@ -361,6 +361,7 @@ async def extract_from_url(
     fidelity_min: int = None,
     base_rate: float = None,
     progress_callback=None,
+    bypass_cache: bool = False,
 ) -> Dict[str, Any]:
     """
     One-shot extraction for a single URL.
@@ -377,7 +378,7 @@ async def extract_from_url(
 
     # ── Check in-memory cache first (fastest) ──────────────────────────────
     original_url = url if isinstance(url, str) else None
-    if original_url:
+    if original_url and not bypass_cache:
         cached = _cache_get(original_url)
         if cached:
             if progress_callback:
@@ -392,7 +393,7 @@ async def extract_from_url(
     asof = _utc_now() if settings.USE_UTC else datetime.now()
 
     # ── Check DB cache (fresh data < 5 min old) ────────────────────────────
-    if original_url and markets:
+    if original_url and markets and not bypass_cache:
         from .database import get_pool
         try:
             pool = await get_pool()

@@ -235,9 +235,15 @@ export const getTradingSignal = aiApi.getTradingSignal
 
 // WebSocket connection helper
 const getWsBaseUrl = () => {
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-  // Automatically convert http -> ws and https -> wss
-  return apiBase.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+  const configuredBase = import.meta.env.VITE_API_BASE_URL
+  if (configuredBase) {
+    return configuredBase.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+  }
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}`
+  }
+  return 'ws://localhost:8000'
 }
 
 export const createWebSocket = (marketId) => {
@@ -246,6 +252,10 @@ export const createWebSocket = (marketId) => {
 
 export const createAllMarketsWebSocket = () => {
   return new WebSocket(`${getWsBaseUrl()}/ws/markets`)
+}
+
+export const createEventsWebSocket = () => {
+  return new WebSocket(`${getWsBaseUrl()}/ws/events`)
 }
 
 export default api

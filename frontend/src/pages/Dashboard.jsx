@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity } from 'lucide-react'
-import { marketsApi } from '../services/api'
+import { createEventsWebSocket, marketsApi } from '../services/api'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { formatLargeNumber } from '../utils/formatters'
 
@@ -40,7 +40,6 @@ function EventCard({ event }) {
       to={`/event/${event.event_id}`}
       className="card hover:shadow-lg transition-shadow cursor-pointer group block"
     >
-      {/* Title + arrow */}
       <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2 flex-1 mr-2">
           {event.event_title || 'Untitled Event'}
@@ -48,7 +47,6 @@ function EventCard({ event }) {
         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary-600 flex-shrink-0 mt-0.5" />
       </div>
 
-      {/* Status badge + expiry warning */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${lifecycle.badge.color}`}>
           {lifecycle.badge.icon}
@@ -62,7 +60,6 @@ function EventCard({ event }) {
         )}
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-0.5">Markets</div>
@@ -93,11 +90,10 @@ function EventCard({ event }) {
         </div>
       </div>
 
-      {/* Footer */}
       {event.last_updated && (
         <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center text-sm text-gray-400">
           <Calendar className="w-3 h-3 mr-1" />
-          Updated {new Date(event.last_updated).toLocaleDateString()}
+          Last synced {new Date(event.last_updated).toLocaleDateString()}
         </div>
       )}
     </Link>
@@ -106,27 +102,73 @@ function EventCard({ event }) {
 
 function Dashboard() {
   const [search, setSearch] = useState('')
+  const [liveEvents, setLiveEvents] = useState([])
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', search],
     queryFn: () => marketsApi.getEvents({ search: search || undefined, limit: 100 }),
-    staleTime: 0,
-    // Auto-refresh every 15s if any event is still calculating its score
-    refetchInterval: (query) => {
-      const data = query.state.data
-      const hasNullScores = Array.isArray(data) && data.some(e => e.best_score == null)
-      return hasNullScores ? 15_000 : false
-    },
+    staleTime: 30_000,
+    refetchInterval: 120_000,
   })
 
-  const filtered = events?.filter(e =>
-    !search || (e.event_title || '').toLowerCase().includes(search.toLowerCase())
-  ) || []
+  useEffect(() => {
+    if (Array.isArray(events)) {
+      setLiveEvents(events)
+    }
+  }, [events])
+
+  useEffect(() => {
+    let socket
+    let reconnectTimer
+    let isMounted = true
+
+    const connect = () => {
+      socket = createEventsWebSocket()
+
+      socket.onmessage = (message) => {
+        if (!isMounted) return
+        try {
+          const payload = JSON.parse(message.data)
+          if ((payload.type === 'events_initial' || payload.type === 'events_update') && Array.isArray(payload.data)) {
+            setLiveEvents(payload.data)
+          }
+        } catch {
+          // Ignore malformed websocket payloads
+        }
+      }
+
+      socket.onclose = () => {
+        if (!isMounted) return
+        reconnectTimer = setTimeout(connect, 3000)
+      }
+
+      socket.onerror = () => {
+        socket?.close()
+      }
+    }
+
+    connect()
+
+    return () => {
+      isMounted = false
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        socket.close()
+      }
+    }
+  }, [])
+
+  const sourceEvents = liveEvents.length > 0 ? liveEvents : (events || [])
+
+  const filtered = useMemo(() => {
+    return sourceEvents.filter(e =>
+      !search || (e.event_title || '').toLowerCase().includes(search.toLowerCase())
+    )
+  }, [sourceEvents, search])
 
   return (
     <ErrorBoundary>
       <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">Market Events</h1>
@@ -143,7 +185,6 @@ function Dashboard() {
           </Link>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -155,21 +196,18 @@ function Dashboard() {
           />
         </div>
 
-        {/* Loading */}
-        {isLoading && (
+        {isLoading && sourceEvents.length === 0 && (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
           </div>
         )}
 
-        {/* Error */}
-        {error && (
+        {error && sourceEvents.length === 0 && (
           <div className="card bg-red-50 dark:bg-red-900/20 text-center py-12">
             <p className="text-red-700 dark:text-red-300">Failed to load events. Please try again.</p>
           </div>
         )}
 
-        {/* Empty */}
         {!isLoading && !error && filtered.length === 0 && (
           <div className="card text-center py-16">
             <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -186,7 +224,6 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Events Grid */}
         {!isLoading && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filtered.map(event => (

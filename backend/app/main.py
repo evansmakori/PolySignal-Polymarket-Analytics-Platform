@@ -35,12 +35,18 @@ async def lifespan(app: FastAPI):
         print("✓ PostgreSQL connection pool initialized")
         print("✓ Database tables ensured")
 
-        # Start daily lifecycle manager background job
-        from .core.lifecycle import run_daily_lifecycle_job, run_score_backfill_job
+        # Start background jobs
+        from .core.lifecycle import (
+            run_daily_lifecycle_job,
+            run_score_backfill_job,
+            run_active_event_refresh_job,
+        )
         asyncio.create_task(run_daily_lifecycle_job())
         asyncio.create_task(run_score_backfill_job())
+        asyncio.create_task(run_active_event_refresh_job())
         print("✓ Lifecycle manager started")
         print("✓ Score backfill job started (runs every 5 minutes)")
+        print("✓ Active event refresh job started (runs every 5 minutes)")
     except Exception as e:
         print(f"⚠ Database initialization warning: {e}")
     yield

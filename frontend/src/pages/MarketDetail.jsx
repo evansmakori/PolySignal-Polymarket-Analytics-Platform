@@ -189,7 +189,7 @@ function MarketDetail() {
 
           {/* Timestamps */}
           <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Last updated: {displayData.snapshot_ts ? formatDateTime(displayData.snapshot_ts) : 'N/A'}
+            Last synced: {displayData.snapshot_ts ? formatDateTime(displayData.snapshot_ts) : 'N/A'}
           </div>
         </div>
       </div>
