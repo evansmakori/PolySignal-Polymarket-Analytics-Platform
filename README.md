@@ -24,11 +24,12 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 - 📈 **Price Predictions** — Confidence-interval price forecasts using trained ML models
 - 🚨 **Anomaly Detection** — Flags unusual market behavior and suspicious price movements
 - 🔴 **Real-Time Data** — Live trades ticker, order book visualization, and WebSocket-powered price feeds
-- 🌡️ **Liquidity Heatmap** — Visual representation of market depth and liquidity distribution
+- 🌡️ **Liquidity Heatmap** — Visual YES/NO orderbook depth with toggle, liquidity walls, and depth stats
 - 📉 **Score History Charts** — Track how a market's risk profile evolves over time
 - ⚖️ **Event Comparison** — Analyze multiple related markets side by side
 - 🔔 **Risk Alerts** — Automated alerts when market conditions change significantly
 - 🔗 **Market Extractor** — Paste any Polymarket URL to instantly analyze that market
+- 🗄️ **Smart Lifecycle Management** — Active events auto-sync from Polymarket every 5 minutes; resolved events archived after 7 days
 
 ---
 
@@ -65,18 +66,54 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 ### Infrastructure & Cloud
 | Service | Purpose |
 |---|---|
-| DigitalOcean App Platform | Hosting backend + frontend (Docker-based) |
+| DigitalOcean App Platform | Hosting frontend + App Platform backend |
+| DigitalOcean Droplet (2vCPU/2GB, nyc1) | Primary backend with WebSocket support |
+| DigitalOcean Load Balancer | Traffic routing + health checks to Droplet |
 | DigitalOcean Managed PostgreSQL | Cloud database (nyc1 region, SSL enforced) |
 | DigitalOcean GPU Droplets | ML model training (H100/A100 via Gradient™ AI) |
 | Docker | Containerization |
-| Nginx | Frontend static file serving & reverse proxy |
-| GitHub Actions | CI/CD pipeline — auto-deploy on push |
+| Nginx | Frontend static file serving & WebSocket reverse proxy |
+| GitHub Actions | CI/CD pipeline — auto-deploy on push to both App Platform and Droplet |
 
 ### External APIs
 | API | Purpose |
 |---|---|
 | Polymarket Gamma API | Market data, events, categories |
 | Polymarket CLOB API | Order book and trade data |
+
+---
+
+## 🏗️ Architecture
+
+```
+Users
+  │
+  ▼
+DigitalOcean App Platform
+  https://polysignal-zp2r4.ondigitalocean.app
+  └── React + Nginx (frontend)
+  └── FastAPI backend (API, no background jobs)
+          │
+          │ WebSocket + API calls
+          ▼
+DigitalOcean Load Balancer (138.197.231.111)
+  └── Health checks, traffic routing
+          │
+          ▼
+DigitalOcean Droplet (nyc1, 2vCPU/2GB)
+  └── Nginx (WebSocket reverse proxy)
+      └── FastAPI + Uvicorn
+          └── Background jobs (auto-sync, backfill, lifecycle)
+                  │
+                  ▼
+DigitalOcean Managed PostgreSQL (nyc1)
+  └── 346,000+ market snapshots
+```
+
+### CI/CD Pipeline
+Every push to `main` triggers:
+1. **GitHub Actions: Deploy Backend to Droplet** — SSH pull, pip install, restart FastAPI
+2. **GitHub Actions: Update App** — DigitalOcean App Platform frontend + backend rebuild
 
 ---
 
@@ -97,6 +134,7 @@ PolySignal/
 │   │   │   ├── database.py   # PostgreSQL operations
 │   │   │   ├── extractor.py  # Market URL extractor
 │   │   │   ├── alerts.py     # Risk alerts system
+│   │   │   ├── lifecycle.py  # Auto-sync & lifecycle management
 │   │   │   └── score_history.py # Score history tracking
 │   │   ├── ml/               # Machine learning models
 │   │   │   ├── price_predictor.py    # Price forecasting
@@ -111,32 +149,17 @@ PolySignal/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/       # Reusable UI components
-│   │   │   ├── AIPrediction.jsx
-│   │   │   ├── AITradingSignal.jsx
-│   │   │   ├── AISentimentAnalysis.jsx
-│   │   │   ├── UnifiedRiskScore.jsx
-│   │   │   ├── PriceChart.jsx
-│   │   │   ├── OrderbookView.jsx
-│   │   │   ├── TradesTicker.jsx
-│   │   │   ├── LiquidityHeatmap.jsx
-│   │   │   ├── ScoreHistoryChart.jsx
-│   │   │   ├── RiskAlerts.jsx
-│   │   │   └── ...
 │   │   ├── pages/            # Page-level components
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── MarketDetail.jsx
-│   │   │   ├── Rankings.jsx
-│   │   │   ├── EventDetail.jsx
-│   │   │   ├── EventComparison.jsx
-│   │   │   ├── ArchivedEvents.jsx
-│   │   │   └── ExtractMarket.jsx
 │   │   ├── services/api.js   # API client
 │   │   └── App.jsx
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   └── package.json
 ├── .do/app.yaml              # DigitalOcean App Platform spec
+├── scripts/                  # Helper shell scripts
 └── .github/workflows/        # GitHub Actions CI/CD
+    ├── deploy-app.yaml       # App Platform auto-deploy
+    └── deploy-droplet.yaml   # Droplet backend auto-deploy
 ```
 
 ---
@@ -184,69 +207,57 @@ Frontend runs at: `http://localhost:5173`
 ### Markets
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/markets/` | List markets with filters |
+| `GET` | `/api/markets/events` | List events with filters |
+| `GET` | `/api/markets/events/{id}/markets` | Get event markets |
 | `GET` | `/api/markets/{id}` | Get market details |
-| `GET` | `/api/markets/{id}/stats` | Market statistics |
-| `GET` | `/api/markets/{id}/history` | Price history |
 | `GET` | `/api/markets/{id}/orderbook` | Order book data |
-| `GET` | `/api/markets/categories` | All categories |
+| `GET` | `/api/markets/rankings` | Ranked markets by score |
 | `POST` | `/api/markets/extract` | Extract market from Polymarket URL |
+| `GET` | `/api/markets/extract/status/{job_id}` | Poll extraction status |
 
 ### AI / ML
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/ai/{id}/prediction` | Price prediction |
-| `GET` | `/api/ai/{id}/sentiment` | Sentiment analysis |
-| `GET` | `/api/ai/{id}/trading-signal` | Trading signal |
-| `GET` | `/api/ai/{id}/anomalies` | Anomaly detection |
+| `GET` | `/api/ai/prediction/{id}` | Price prediction |
+| `GET` | `/api/ai/sentiment/{id}` | Sentiment analysis |
+| `GET` | `/api/ai/trading-signal/{id}` | Trading signal |
+| `GET` | `/api/ai/anomalies/{id}` | Anomaly detection |
 
 ### WebSocket
 | Endpoint | Description |
 |---|---|
+| `WS /ws/events` | Real-time dashboard event updates |
 | `WS /ws/markets/{id}` | Real-time updates for a specific market |
-| `WS /ws/markets` | Real-time updates for all markets |
 
 ---
 
 ## 🧠 The Unified Risk Score (URS)
 
-The URS is PolySignal's proprietary scoring engine that evaluates every market across multiple dimensions:
+The URS is PolySignal's proprietary scoring engine:
 
-| Factor | Description |
-|---|---|
-| **Liquidity** | Bid-ask spread, order book depth |
-| **Volume** | 24h trading volume relative to market size |
-| **Volatility** | Price swing magnitude and frequency |
-| **Sentiment** | NLP score from market description analysis |
-| **Anomaly** | Deviation from expected market behavior |
+| Factor | Weight | Description |
+|---|---|---|
+| **Expected Value** | 30% | Edge in the trade |
+| **Kelly Fraction** | 20% | Optimal bet size |
+| **Liquidity** | 15% | Market depth |
+| **Volatility** | 10% | Price stability |
+| **Orderbook Imbalance** | 10% | Buy vs sell pressure |
+| **Sentiment Momentum** | 10% | Price trend strength |
+| **Spread** | 5% | Bid-ask gap |
 
-Scores range from **0–100**, where higher scores indicate higher risk/opportunity. Markets are ranked and updated continuously.
-
----
-
-## 🐳 Docker Deployment
-
-Both services are fully Dockerized:
-
-```bash
-# Backend
-cd backend && docker build -t polysignal-backend .
-
-# Frontend
-cd frontend && docker build -t polysignal-frontend .
-```
-
-Or deploy the full stack to DigitalOcean App Platform using the included `app.yaml`:
-
-```bash
-doctl apps create --spec .do/app.yaml
-```
+Scores range **0–100**:
+- `80–100` 🟢 Strong Buy
+- `60–79` 🔵 Moderate Opportunity
+- `40–59` 🟡 Neutral / Watchlist
+- `0–39` 🔴 Weak / Avoid
 
 ---
 
 ## 🔄 CI/CD
 
-Every push to `main` automatically triggers a deployment to DigitalOcean App Platform via GitHub Actions. Preview deployments are also created for pull requests.
+Every push to `main` triggers:
+1. **Frontend + App Platform backend** — auto-deployed via `deploy-app.yaml`
+2. **Droplet backend** — auto-deployed via `deploy-droplet.yaml` (SSH + git pull + restart)
 
 ---
 
@@ -258,4 +269,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙌 Built With ❤️ on DigitalOcean
 
-PolySignal is proudly deployed on [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform/) with [DigitalOcean Managed PostgreSQL](https://www.digitalocean.com/products/managed-databases-postgresql/) and ML models trained on [DigitalOcean Gradient™ AI](https://www.digitalocean.com/products/gradient) GPU infrastructure.
+PolySignal is proudly deployed on:
+- [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform/)
+- [DigitalOcean Managed PostgreSQL](https://www.digitalocean.com/products/managed-databases-postgresql/)
+- [DigitalOcean Droplets](https://www.digitalocean.com/products/droplets/) with Load Balancer
+- [DigitalOcean Gradient™ AI](https://www.digitalocean.com/products/gradient) GPU infrastructure for ML training
