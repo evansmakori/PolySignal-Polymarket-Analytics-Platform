@@ -34,7 +34,10 @@ class Settings(BaseSettings):
     DEFAULT_FIDELITY: int = 60
     USE_UTC: bool = True
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    # Background jobs (set true on Droplet, false on App Platform)
+    ENABLE_BACKGROUND_JOBS: bool = False
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     @property
     def database_url(self) -> str:

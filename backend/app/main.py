@@ -16,7 +16,6 @@ from .api.ai import router as ai_router
 
 async def _init_db_and_jobs():
     """Initialize DB pool and background jobs — runs in background after startup."""
-    import os
     # Retry DB connection with delay to avoid exhausting connections at startup
     for attempt in range(1, 11):
         try:
@@ -45,7 +44,7 @@ async def _init_db_and_jobs():
                 print("⚠ Database initialization warning: could not connect after 10 attempts")
                 return
 
-    enable_jobs = os.getenv("ENABLE_BACKGROUND_JOBS", "false").lower() == "true"
+    enable_jobs = settings.ENABLE_BACKGROUND_JOBS
     if enable_jobs:
         from .core.lifecycle import (
             run_daily_lifecycle_job,
