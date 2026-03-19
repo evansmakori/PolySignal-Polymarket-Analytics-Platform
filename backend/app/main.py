@@ -14,47 +14,59 @@ from .api.ai import router as ai_router
 
 
 
+async def _init_db_and_jobs():
+    """Initialize DB pool and background jobs — runs in background after startup."""
+    import os
+    # Retry DB connection with delay to avoid exhausting connections at startup
+    for attempt in range(1, 11):
+        try:
+            await create_pool()
+            from .core.database import get_pool
+            pool = await get_pool()
+            async with pool.acquire() as conn:
+                try:
+                    await conn.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
+                except Exception:
+                    pass
+                try:
+                    await conn.execute("SET search_path TO public")
+                except Exception:
+                    pass
+            await ensure_tables()
+            print(f"✓ Database pool created on attempt {attempt}")
+            print("✓ PostgreSQL connection pool initialized")
+            print("✓ Database tables ensured")
+            break
+        except Exception as e:
+            print(f"⚠ DB connection attempt {attempt}/10 failed: {e}")
+            if attempt < 10:
+                await asyncio.sleep(3)
+            else:
+                print("⚠ Database initialization warning: could not connect after 10 attempts")
+                return
+
+    enable_jobs = os.getenv("ENABLE_BACKGROUND_JOBS", "false").lower() == "true"
+    if enable_jobs:
+        from .core.lifecycle import (
+            run_daily_lifecycle_job,
+            run_score_backfill_job,
+            run_active_event_refresh_job,
+        )
+        asyncio.create_task(run_daily_lifecycle_job())
+        asyncio.create_task(run_score_backfill_job())
+        asyncio.create_task(run_active_event_refresh_job())
+        print("✓ Lifecycle manager started")
+        print("✓ Score backfill job started (runs every 5 minutes)")
+        print("✓ Active event refresh job started (runs every 5 minutes)")
+    else:
+        print("✓ Background jobs disabled (set ENABLE_BACKGROUND_JOBS=true to enable)")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan: start up and shut down."""
-    # Startup
-    try:
-        await create_pool()
-        from .core.database import get_pool
-        pool = await get_pool()
-        async with pool.acquire() as conn:
-            try:
-                await conn.execute("GRANT ALL ON SCHEMA public TO CURRENT_USER")
-            except Exception:
-                pass
-            try:
-                await conn.execute("SET search_path TO public")
-            except Exception:
-                pass
-        await ensure_tables()
-        print("✓ PostgreSQL connection pool initialized")
-        print("✓ Database tables ensured")
-
-        # Start background jobs — only run on the primary backend (Droplet)
-        # Set ENABLE_BACKGROUND_JOBS=true in Droplet .env to enable
-        import os
-        enable_jobs = os.getenv("ENABLE_BACKGROUND_JOBS", "false").lower() == "true"
-        if enable_jobs:
-            from .core.lifecycle import (
-                run_daily_lifecycle_job,
-                run_score_backfill_job,
-                run_active_event_refresh_job,
-            )
-            asyncio.create_task(run_daily_lifecycle_job())
-            asyncio.create_task(run_score_backfill_job())
-            asyncio.create_task(run_active_event_refresh_job())
-            print("✓ Lifecycle manager started")
-            print("✓ Score backfill job started (runs every 5 minutes)")
-            print("✓ Active event refresh job started (runs every 5 minutes)")
-        else:
-            print("✓ Background jobs disabled (set ENABLE_BACKGROUND_JOBS=true to enable)")
-    except Exception as e:
-        print(f"⚠ Database initialization warning: {e}")
+    # Start DB init in background so app starts immediately even if DB is busy
+    asyncio.create_task(_init_db_and_jobs())
     yield
     # Shutdown
     try:
