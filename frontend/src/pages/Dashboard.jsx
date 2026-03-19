@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity, Sparkles } from 'lucide-react'
-import { marketsApi } from '../services/api'
+import { createEventsWebSocket, marketsApi } from '../services/api'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { formatLargeNumber } from '../utils/formatters'
 
@@ -138,8 +138,47 @@ function Dashboard() {
     if (highlightSlugFromQuery) setHighlightedEventSlug(highlightSlugFromQuery)
   }, [searchParams])
 
-  // Note: WebSocket is not supported on DigitalOcean App Platform (ingress blocks upgrades).
-  // Live updates are handled via HTTP polling (refetchInterval below).
+  // WebSocket for live dashboard updates — now supported via Droplet + Load Balancer
+  useEffect(() => {
+    let socket
+    let reconnectTimer
+    let isMounted = true
+
+    const connect = () => {
+      socket = createEventsWebSocket()
+
+      socket.onmessage = (message) => {
+        if (!isMounted) return
+        try {
+          const payload = JSON.parse(message.data)
+          if ((payload.type === 'events_initial' || payload.type === 'events_update') && Array.isArray(payload.data)) {
+            setLiveEvents(payload.data)
+          }
+        } catch {
+          // Ignore malformed websocket payloads
+        }
+      }
+
+      socket.onclose = () => {
+        if (!isMounted) return
+        reconnectTimer = setTimeout(connect, 5000)
+      }
+
+      socket.onerror = () => {
+        socket?.close()
+      }
+    }
+
+    connect()
+
+    return () => {
+      isMounted = false
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        socket.close()
+      }
+    }
+  }, [])
 
   const sourceEvents = liveEvents.length > 0 ? liveEvents : (events || [])
 
