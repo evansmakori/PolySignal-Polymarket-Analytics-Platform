@@ -37,6 +37,10 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt -q
 
+            echo "=== Updating service config (1 worker to save DB connections) ==="
+            sed -i 's/--workers 2/--workers 1/g' /etc/systemd/system/polysignal.service
+            systemctl daemon-reload
+
             echo "=== Restarting service ==="
             systemctl restart polysignal
 
