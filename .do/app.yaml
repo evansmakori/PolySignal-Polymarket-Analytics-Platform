@@ -69,7 +69,7 @@ services:
         value: "8000"
         scope: RUN_TIME
       - key: CORS_ORIGINS
-        value: "${APP_URL},https://polymarket-dashboard-6jj9o.ondigitalocean.app"
+        value: "https://polysignal-zp2r4.ondigitalocean.app,http://localhost:5173,http://localhost:3000"
         scope: RUN_TIME
       - key: GAMMA_BASE
         value: https://gamma-api.polymarket.com
@@ -111,5 +111,5 @@ services:
     instance_count: 1
     envs:
       - key: VITE_API_BASE_URL
-        value: "https://polymarket-dashboard-6jj9o.ondigitalocean.app"
+        value: "https://polysignal-zp2r4.ondigitalocean.app"
         scope: BUILD_TIME

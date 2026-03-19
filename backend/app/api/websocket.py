@@ -26,53 +26,36 @@ async def _get_dashboard_events(limit: int = 100):
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
-            WITH latest_stats AS (
-                SELECT DISTINCT ON (market_id)
-                    market_id,
-                    event_id,
-                    event_title,
-                    event_slug,
-                    volume_total,
-                    liquidity,
-                    snapshot_ts,
-                    predictive_score,
-                    lifecycle_status,
-                    resolved_at
-                FROM polymarket_market_stats
-                WHERE event_id IS NOT NULL
-                ORDER BY market_id, snapshot_ts DESC
-            ),
-            best AS (
-                SELECT market_id, MAX(predictive_score) as max_score
-                FROM polymarket_market_stats
-                WHERE event_id IS NOT NULL
-                GROUP BY market_id
-            )
             SELECT
-                ls.event_id,
-                ls.event_title,
-                ls.event_slug,
-                COUNT(*) as market_count,
-                SUM(ls.volume_total) as total_volume,
-                SUM(ls.liquidity) as total_liquidity,
-                MAX(ls.snapshot_ts) as last_updated,
-                MAX(COALESCE(ls.predictive_score, b.max_score)) as best_score,
+                event_id,
+                MAX(event_title) as event_title,
+                MAX(event_slug) as event_slug,
+                COUNT(DISTINCT market_id) as market_count,
+                SUM(volume_total) as total_volume,
+                SUM(liquidity) as total_liquidity,
+                MAX(snapshot_ts) as last_updated,
+                MAX(predictive_score) as best_score,
                 CASE
-                    WHEN BOOL_OR(COALESCE(ls.lifecycle_status, 'active') = 'active') THEN 'active'
-                    WHEN BOOL_AND(ls.lifecycle_status = 'archived') THEN 'archived'
+                    WHEN BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') THEN 'active'
+                    WHEN BOOL_AND(lifecycle_status = 'archived') THEN 'archived'
                     ELSE 'resolved'
                 END as lifecycle_status,
                 CASE
-                    WHEN BOOL_OR(COALESCE(ls.lifecycle_status, 'active') = 'active') THEN NULL
-                    ELSE MAX(ls.resolved_at)
+                    WHEN BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') THEN NULL
+                    ELSE MAX(resolved_at)
                 END as resolved_at
-            FROM latest_stats ls
-            JOIN best b ON b.market_id = ls.market_id
-            GROUP BY ls.event_id, ls.event_title, ls.event_slug
-            HAVING BOOL_OR(COALESCE(ls.lifecycle_status, 'active') = 'active')
+            FROM polymarket_market_stats
+            WHERE event_id IS NOT NULL
+              AND snapshot_ts = (
+                SELECT MAX(s2.snapshot_ts)
+                FROM polymarket_market_stats s2
+                WHERE s2.market_id = polymarket_market_stats.market_id
+              )
+            GROUP BY event_id
+            HAVING BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active')
                 OR (
-                    NOT BOOL_AND(ls.lifecycle_status = 'archived')
-                    AND MAX(ls.resolved_at) > NOW() - INTERVAL '7 days'
+                    NOT BOOL_AND(lifecycle_status = 'archived')
+                    AND MAX(resolved_at) > NOW() - INTERVAL '7 days'
                 )
             ORDER BY total_volume DESC NULLS LAST
             LIMIT $1
@@ -124,6 +107,7 @@ async def websocket_market_updates(websocket: WebSocket, market_id: str):
     """WebSocket endpoint for real-time market updates."""
     await manager.connect(websocket, market_id)
 
+
     try:
         market_data = await MarketService.get_market_by_id(market_id)
         if market_data:
@@ -172,7 +156,8 @@ async def websocket_all_markets(websocket: WebSocket):
 @router.websocket("/ws/events")
 async def websocket_events(websocket: WebSocket):
     """WebSocket endpoint for live dashboard event-card updates."""
-    await websocket.accept()
+    # Accept all origins — nginx handles routing, App Platform handles TLS
+    await websocket.accept(subprotocol=None)
 
     try:
         initial = await _get_dashboard_events(limit=100)
