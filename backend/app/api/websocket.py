@@ -26,13 +26,6 @@ async def _get_dashboard_events(limit: int = 100):
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
-            WITH ranked AS (
-                SELECT *,
-                    ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY snapshot_ts DESC) AS rn
-                FROM polymarket_market_stats
-                WHERE event_id IS NOT NULL
-            ),
-            latest AS (SELECT * FROM ranked WHERE rn = 1)
             SELECT
                 event_id,
                 MAX(event_title) as event_title,
@@ -51,7 +44,8 @@ async def _get_dashboard_events(limit: int = 100):
                     WHEN BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') THEN NULL
                     ELSE MAX(resolved_at)
                 END as resolved_at
-            FROM latest
+            FROM latest_market_stats
+            WHERE event_id IS NOT NULL
             GROUP BY event_id
             HAVING BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active')
                 OR (
@@ -104,7 +98,6 @@ manager = ConnectionManager()
 
 
 @router.websocket("/ws/markets/{market_id}")
-@router.websocket("/markets/{market_id}")
 async def websocket_market_updates(websocket: WebSocket, market_id: str):
     """WebSocket endpoint for real-time market updates."""
     await manager.connect(websocket, market_id)
@@ -135,7 +128,6 @@ async def websocket_market_updates(websocket: WebSocket, market_id: str):
 
 
 @router.websocket("/ws/markets")
-@router.websocket("/markets")
 async def websocket_all_markets(websocket: WebSocket):
     """WebSocket endpoint for updates on all markets."""
     await websocket.accept()
@@ -157,11 +149,9 @@ async def websocket_all_markets(websocket: WebSocket):
 
 
 @router.websocket("/ws/events")
-@router.websocket("/events")
 async def websocket_events(websocket: WebSocket):
     """WebSocket endpoint for live dashboard event-card updates."""
-    # Accept all origins — nginx handles routing, App Platform handles TLS
-    await websocket.accept(subprotocol=None)
+    await websocket.accept()
 
     try:
         initial = await _get_dashboard_events(limit=100)

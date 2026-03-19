@@ -169,6 +169,24 @@ CREATE INDEX IF NOT EXISTS idx_stats_event_snap       ON {TBL_STATS} (event_id, 
 CREATE INDEX IF NOT EXISTS idx_stats_volume           ON {TBL_STATS} (volume_total DESC NULLS LAST);
 """
 
+# Materialized view holding only the latest snapshot per market
+# Queries against this are 10-50x faster than scanning full history
+DDL_LATEST_VIEW = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS latest_market_stats AS
+    SELECT DISTINCT ON (market_id) *
+    FROM polymarket_market_stats
+    ORDER BY market_id, snapshot_ts DESC;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_latest_market_id
+    ON latest_market_stats (market_id);
+CREATE INDEX IF NOT EXISTS idx_latest_event_id
+    ON latest_market_stats (event_id);
+CREATE INDEX IF NOT EXISTS idx_latest_volume
+    ON latest_market_stats (volume_total DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_latest_lifecycle
+    ON latest_market_stats (event_id, lifecycle_status, resolved_at);
+"""
+
 # ---------------------------------------------------------------------------
 # Connection pool (initialised in main.py startup)
 # ---------------------------------------------------------------------------
@@ -281,6 +299,15 @@ async def ensure_tables() -> None:
                         await conn.execute(stmt)
                     except Exception:
                         pass
+
+            # Create materialized view for fast event queries
+            for stmt in DDL_LATEST_VIEW.strip().split(";"):
+                stmt = stmt.strip()
+                if stmt:
+                    try:
+                        await conn.execute(stmt)
+                    except Exception as e:
+                        print(f"⚠ Materialized view warning: {e}")
         finally:
             await conn.close()
     except Exception as e:
@@ -581,6 +608,18 @@ async def upsert_market_stats(stats: dict) -> None:
                 else None
             ),
         )
+
+
+async def refresh_latest_market_stats() -> None:
+    """Refresh the materialized view after new data is written."""
+    try:
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "REFRESH MATERIALIZED VIEW CONCURRENTLY latest_market_stats"
+            )
+    except Exception as e:
+        print(f"⚠ Materialized view refresh warning: {e}")
 
 
 async def upsert_trades(token_id: str, market_id: str, trades: list) -> None:

@@ -155,6 +155,7 @@ async def get_extraction_status(job_id: str):
     return job
 
 
+@router.get("/rankings", response_model=List[Dict[str, Any]])
 @router.get("/ranked", response_model=List[Dict[str, Any]])
 async def get_ranked_markets(
     category: Optional[str] = None,
@@ -637,18 +638,8 @@ async def list_events(
             )
             AND lifecycle_status != 'archived'
         """
-        # Use window function to get latest snapshot per market efficiently
+        # Query against materialized view (latest snapshot per market) — very fast
         _events_sql = """
-            WITH ranked AS (
-                SELECT *,
-                    ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY snapshot_ts DESC) AS rn
-                FROM polymarket_market_stats
-                WHERE event_id IS NOT NULL
-                {search_filter}
-            ),
-            latest AS (
-                SELECT * FROM ranked WHERE rn = 1
-            )
             SELECT
                 event_id,
                 MAX(event_title) as event_title,
@@ -667,7 +658,9 @@ async def list_events(
                     WHEN BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') THEN NULL
                     ELSE MAX(resolved_at)
                 END as resolved_at
-            FROM latest
+            FROM latest_market_stats
+            WHERE event_id IS NOT NULL
+            {search_filter}
             GROUP BY event_id
             HAVING BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active')
                 OR (

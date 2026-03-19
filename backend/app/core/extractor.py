@@ -77,6 +77,7 @@ from .database import (
     upsert_orderbook,
     upsert_history,
     upsert_market_stats,
+    refresh_latest_market_stats,
 )
 from .config import settings
 
@@ -532,5 +533,11 @@ async def extract_from_url(
     # Only cache if all markets got valid scores
     if original_url and not had_null_scores:
         _cache_set(original_url, result)
+
+    # Refresh materialized view so events API reflects new data immediately
+    try:
+        await refresh_latest_market_stats()
+    except Exception:
+        pass
 
     return result
