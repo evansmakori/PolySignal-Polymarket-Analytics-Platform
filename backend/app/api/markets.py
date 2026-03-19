@@ -637,7 +637,18 @@ async def list_events(
             )
             AND lifecycle_status != 'archived'
         """
+        # Use window function to get latest snapshot per market efficiently
         _events_sql = """
+            WITH ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY snapshot_ts DESC) AS rn
+                FROM polymarket_market_stats
+                WHERE event_id IS NOT NULL
+                {search_filter}
+            ),
+            latest AS (
+                SELECT * FROM ranked WHERE rn = 1
+            )
             SELECT
                 event_id,
                 MAX(event_title) as event_title,
@@ -656,14 +667,7 @@ async def list_events(
                     WHEN BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') THEN NULL
                     ELSE MAX(resolved_at)
                 END as resolved_at
-            FROM polymarket_market_stats
-            WHERE event_id IS NOT NULL
-              AND snapshot_ts = (
-                SELECT MAX(s2.snapshot_ts)
-                FROM polymarket_market_stats s2
-                WHERE s2.market_id = polymarket_market_stats.market_id
-              )
-            {search_filter}
+            FROM latest
             GROUP BY event_id
             HAVING BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active')
                 OR (
@@ -675,7 +679,10 @@ async def list_events(
         """
         if search:
             rows = await conn.fetch(
-                _events_sql.format(search_filter="AND (event_title ILIKE $1 OR title ILIKE $1)", limit_param=2),
+                _events_sql.format(
+                    search_filter="AND (event_title ILIKE $1 OR title ILIKE $1)",
+                    limit_param=2
+                ),
                 f"%{search}%", limit
             )
         else:

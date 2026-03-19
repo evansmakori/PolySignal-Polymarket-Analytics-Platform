@@ -26,6 +26,13 @@ async def _get_dashboard_events(limit: int = 100):
     pool = await get_pool()
     async with pool.acquire() as conn:
         rows = await conn.fetch("""
+            WITH ranked AS (
+                SELECT *,
+                    ROW_NUMBER() OVER (PARTITION BY market_id ORDER BY snapshot_ts DESC) AS rn
+                FROM polymarket_market_stats
+                WHERE event_id IS NOT NULL
+            ),
+            latest AS (SELECT * FROM ranked WHERE rn = 1)
             SELECT
                 event_id,
                 MAX(event_title) as event_title,
@@ -44,13 +51,7 @@ async def _get_dashboard_events(limit: int = 100):
                     WHEN BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active') THEN NULL
                     ELSE MAX(resolved_at)
                 END as resolved_at
-            FROM polymarket_market_stats
-            WHERE event_id IS NOT NULL
-              AND snapshot_ts = (
-                SELECT MAX(s2.snapshot_ts)
-                FROM polymarket_market_stats s2
-                WHERE s2.market_id = polymarket_market_stats.market_id
-              )
+            FROM latest
             GROUP BY event_id
             HAVING BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active')
                 OR (
