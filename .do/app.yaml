@@ -111,5 +111,5 @@ services:
     instance_count: 1
     envs:
       - key: VITE_API_BASE_URL
-        value: "http://137.184.76.88"
+        value: "http://138.197.231.111"
         scope: BUILD_TIME
