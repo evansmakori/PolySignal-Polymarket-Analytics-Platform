@@ -189,13 +189,13 @@ function Dashboard() {
 
     if (!highlightedEventId && !highlightedEventSlug) return filteredEvents
 
-    return [...filteredEvents].sort((a, b) => {
-      const aHighlighted = String(a.event_id) === String(highlightedEventId) || a.event_slug === highlightedEventSlug
-      const bHighlighted = String(b.event_id) === String(highlightedEventId) || b.event_slug === highlightedEventSlug
-      if (aHighlighted && !bHighlighted) return -1
-      if (!aHighlighted && bHighlighted) return 1
-      return 0
-    })
+    // Always pin the extracted event at position 0
+    const highlighted = filteredEvents.find(e =>
+      String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
+    )
+    if (!highlighted) return filteredEvents
+    const rest = filteredEvents.filter(e => e !== highlighted)
+    return [highlighted, ...rest]
   }, [sourceEvents, search, highlightedEventId, highlightedEventSlug])
 
   useEffect(() => {
@@ -206,19 +206,8 @@ function Dashboard() {
     )
     if (!highlightedEvent) return
 
-    let attempts = 0
-    const maxAttempts = 8
-    const interval = setInterval(() => {
-      const node = document.getElementById(`event-card-${highlightedEvent.event_id}`)
-      attempts += 1
-      if (node) {
-        node.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        clearInterval(interval)
-      } else if (attempts >= maxAttempts) {
-        clearInterval(interval)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-    }, 250)
+    // Card is always pinned first — just scroll to top immediately
+    window.scrollTo({ top: 0, behavior: 'smooth' })
 
     const clearTimer = setTimeout(() => {
       setHighlightedEventId(null)
@@ -227,10 +216,9 @@ function Dashboard() {
       nextParams.delete('highlightEvent')
       nextParams.delete('highlightSlug')
       setSearchParams(nextParams, { replace: true })
-    }, 8000)
+    }, 10000)
 
     return () => {
-      clearInterval(interval)
       clearTimeout(clearTimer)
     }
   }, [highlightedEventId, highlightedEventSlug, filtered, searchParams, setSearchParams])
