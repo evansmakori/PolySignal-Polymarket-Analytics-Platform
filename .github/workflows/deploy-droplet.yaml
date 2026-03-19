@@ -1,0 +1,50 @@
+name: Deploy Backend to Droplet
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-droplet.yaml'
+
+jobs:
+  deploy:
+    name: Deploy FastAPI to Droplet
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Droplet via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            echo "=== Pulling latest code ==="
+            cd /opt/polysignal
+            git pull origin main
+
+            echo "=== Installing dependencies ==="
+            cd /opt/polysignal/backend
+            source venv/bin/activate
+            pip install -r requirements.txt -q
+
+            echo "=== Restarting service ==="
+            systemctl restart polysignal
+
+            echo "=== Waiting for startup ==="
+            sleep 8
+
+            echo "=== Health check ==="
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Deployment successful — health check passed"
+            else
+              echo "❌ Health check failed with status $STATUS"
+              journalctl -u polysignal -n 20 --no-pager
+              exit 1
+            fi
