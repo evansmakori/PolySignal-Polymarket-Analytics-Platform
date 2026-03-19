@@ -103,6 +103,7 @@ manager = ConnectionManager()
 
 
 @router.websocket("/ws/markets/{market_id}")
+@router.websocket("/markets/{market_id}")
 async def websocket_market_updates(websocket: WebSocket, market_id: str):
     """WebSocket endpoint for real-time market updates."""
     await manager.connect(websocket, market_id)
@@ -133,6 +134,7 @@ async def websocket_market_updates(websocket: WebSocket, market_id: str):
 
 
 @router.websocket("/ws/markets")
+@router.websocket("/markets")
 async def websocket_all_markets(websocket: WebSocket):
     """WebSocket endpoint for updates on all markets."""
     await websocket.accept()
@@ -154,6 +156,7 @@ async def websocket_all_markets(websocket: WebSocket):
 
 
 @router.websocket("/ws/events")
+@router.websocket("/events")
 async def websocket_events(websocket: WebSocket):
     """WebSocket endpoint for live dashboard event-card updates."""
     # Accept all origins — nginx handles routing, App Platform handles TLS

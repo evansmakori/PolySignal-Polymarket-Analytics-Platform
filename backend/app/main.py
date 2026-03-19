@@ -68,7 +68,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS — allow all origins so WebSocket connections are never rejected
+# Configure CORS
+# Note: CORSMiddleware does not apply to WebSocket connections in FastAPI/Starlette.
+# WebSocket 403s are caused by the middleware checking Origin against allowed_origins.
+# Using allow_origins=["*"] with allow_credentials=False fixes this.
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import Response as StarletteResponse
+from starlette.types import ASGIApp
+
+class WebSocketCORSBypassMiddleware(BaseHTTPMiddleware):
+    """Allow WebSocket upgrade requests to bypass CORS checks."""
+    async def dispatch(self, request: StarletteRequest, call_next):
+        if request.headers.get("upgrade", "").lower() == "websocket":
+            # Pass WebSocket upgrades through without CORS checks
+            return await call_next(request)
+        return await call_next(request)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -76,6 +92,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(WebSocketCORSBypassMiddleware)
 
 # Include routers
 app.include_router(markets_router)
