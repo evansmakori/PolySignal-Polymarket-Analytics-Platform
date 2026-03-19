@@ -157,11 +157,16 @@ CREATE TABLE IF NOT EXISTS {TBL_STATS} (
 """
 
 DDL_STATS_IDX = f"""
-CREATE INDEX IF NOT EXISTS idx_stats_market_id   ON {TBL_STATS} (market_id);
-CREATE INDEX IF NOT EXISTS idx_stats_snapshot_ts ON {TBL_STATS} (snapshot_ts DESC);
-CREATE INDEX IF NOT EXISTS idx_stats_category    ON {TBL_STATS} (category);
-CREATE INDEX IF NOT EXISTS idx_stats_score       ON {TBL_STATS} (predictive_score DESC NULLS LAST);
-CREATE INDEX IF NOT EXISTS idx_stats_liquidity   ON {TBL_STATS} (liquidity DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_stats_market_id        ON {TBL_STATS} (market_id);
+CREATE INDEX IF NOT EXISTS idx_stats_snapshot_ts      ON {TBL_STATS} (snapshot_ts DESC);
+CREATE INDEX IF NOT EXISTS idx_stats_category         ON {TBL_STATS} (category);
+CREATE INDEX IF NOT EXISTS idx_stats_score            ON {TBL_STATS} (predictive_score DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_stats_liquidity        ON {TBL_STATS} (liquidity DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_stats_market_snap      ON {TBL_STATS} (market_id, snapshot_ts DESC);
+CREATE INDEX IF NOT EXISTS idx_stats_event_id         ON {TBL_STATS} (event_id);
+CREATE INDEX IF NOT EXISTS idx_stats_event_lifecycle  ON {TBL_STATS} (event_id, lifecycle_status, resolved_at);
+CREATE INDEX IF NOT EXISTS idx_stats_event_snap       ON {TBL_STATS} (event_id, market_id, snapshot_ts DESC);
+CREATE INDEX IF NOT EXISTS idx_stats_volume           ON {TBL_STATS} (volume_total DESC NULLS LAST);
 """
 
 # ---------------------------------------------------------------------------

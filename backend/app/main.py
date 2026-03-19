@@ -68,10 +68,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS
+# Configure CORS — include live domain and allow WebSocket upgrades
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://polysignal-zp2r4.ondigitalocean.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

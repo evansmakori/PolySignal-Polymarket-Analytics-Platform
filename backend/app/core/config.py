@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # API Settings
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,https://polysignal-zp2r4.ondigitalocean.app"
 
     # Polymarket API
     GAMMA_BASE: str = "https://gamma-api.polymarket.com"
