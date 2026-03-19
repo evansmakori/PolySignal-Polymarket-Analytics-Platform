@@ -819,6 +819,26 @@ async def get_market_score_trend(
     return await get_score_trend(market_id, days=days)
 
 
+@router.delete("/events/{event_id}")
+async def delete_event(event_id: str):
+    """Permanently delete all market data for a given event from the database."""
+    from ..core.database import get_pool, TBL_STATS
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            f"DELETE FROM {TBL_STATS} WHERE event_id = $1", event_id
+        )
+        deleted = int(result.split()[-1])
+        # Also refresh materialized view
+        try:
+            await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY latest_market_stats")
+        except Exception:
+            pass
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return {"success": True, "event_id": event_id, "rows_deleted": deleted}
+
+
 @router.get("/{market_id}/since-launch", response_model=Dict[str, Any])
 async def get_market_since_launch(market_id: str):
     """
