@@ -3,10 +3,9 @@ region: nyc
 
 databases:
   - cluster_name: db-postgresql-nyc1-60694
-    db_name: defaultdb
-    db_user: doadmin
     engine: PG
     name: db-postgresql-nyc1-60694
+    production: true
 
 ingress:
   rules:
