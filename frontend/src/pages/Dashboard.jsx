@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity, Sparkles } from 'lucide-react'
@@ -117,6 +117,7 @@ function Dashboard() {
   const [liveEvents, setLiveEvents] = useState([])
   const [highlightedEventId, setHighlightedEventId] = useState(searchParams.get('highlightEvent') || null)
   const [highlightedEventSlug, setHighlightedEventSlug] = useState(searchParams.get('highlightSlug') || null)
+  const isHighlightActive = useRef(!!(searchParams.get('highlightEvent') || searchParams.get('highlightSlug')))
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', search],
@@ -152,7 +153,10 @@ function Dashboard() {
         try {
           const payload = JSON.parse(message.data)
           if ((payload.type === 'events_initial' || payload.type === 'events_update') && Array.isArray(payload.data)) {
-            setLiveEvents(payload.data)
+            // Don't overwrite while highlight is active — would break pinned order
+            if (!isHighlightActive.current) {
+              setLiveEvents(payload.data)
+            }
           }
         } catch {
           // Ignore malformed websocket payloads
@@ -209,7 +213,9 @@ function Dashboard() {
     // Card is always pinned first — just scroll to top immediately
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
+    isHighlightActive.current = true
     const clearTimer = setTimeout(() => {
+      isHighlightActive.current = false
       setHighlightedEventId(null)
       setHighlightedEventSlug(null)
       const nextParams = new URLSearchParams(searchParams)
