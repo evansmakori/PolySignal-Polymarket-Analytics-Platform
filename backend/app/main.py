@@ -35,18 +35,24 @@ async def lifespan(app: FastAPI):
         print("✓ PostgreSQL connection pool initialized")
         print("✓ Database tables ensured")
 
-        # Start background jobs
-        from .core.lifecycle import (
-            run_daily_lifecycle_job,
-            run_score_backfill_job,
-            run_active_event_refresh_job,
-        )
-        asyncio.create_task(run_daily_lifecycle_job())
-        asyncio.create_task(run_score_backfill_job())
-        asyncio.create_task(run_active_event_refresh_job())
-        print("✓ Lifecycle manager started")
-        print("✓ Score backfill job started (runs every 5 minutes)")
-        print("✓ Active event refresh job started (runs every 5 minutes)")
+        # Start background jobs — only run on the primary backend (Droplet)
+        # Set ENABLE_BACKGROUND_JOBS=true in Droplet .env to enable
+        import os
+        enable_jobs = os.getenv("ENABLE_BACKGROUND_JOBS", "false").lower() == "true"
+        if enable_jobs:
+            from .core.lifecycle import (
+                run_daily_lifecycle_job,
+                run_score_backfill_job,
+                run_active_event_refresh_job,
+            )
+            asyncio.create_task(run_daily_lifecycle_job())
+            asyncio.create_task(run_score_backfill_job())
+            asyncio.create_task(run_active_event_refresh_job())
+            print("✓ Lifecycle manager started")
+            print("✓ Score backfill job started (runs every 5 minutes)")
+            print("✓ Active event refresh job started (runs every 5 minutes)")
+        else:
+            print("✓ Background jobs disabled (set ENABLE_BACKGROUND_JOBS=true to enable)")
     except Exception as e:
         print(f"⚠ Database initialization warning: {e}")
     yield
