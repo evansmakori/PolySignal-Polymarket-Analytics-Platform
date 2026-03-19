@@ -234,17 +234,13 @@ export const getAnomalyDetection = aiApi.getAnomalyDetection
 export const getTradingSignal = aiApi.getTradingSignal
 
 // WebSocket connection helper
-const getWsBaseUrl = () => {
-  const configuredBase = import.meta.env.VITE_API_BASE_URL
-  if (configuredBase) {
-    return configuredBase.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-  }
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    return `${protocol}//${window.location.host}`
-  }
-  return 'ws://localhost:8000'
-}
+// WebSocket must connect to the Droplet Load Balancer directly
+// because App Platform's ingress blocks WebSocket upgrades
+const WS_BASE_URL = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_BASE_URL || 'ws://localhost:8000').replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+  : 'ws://138.197.231.111'
+
+const getWsBaseUrl = () => WS_BASE_URL
 
 export const createWebSocket = (marketId) => {
   return new WebSocket(`${getWsBaseUrl()}/ws/markets/${marketId}`)
