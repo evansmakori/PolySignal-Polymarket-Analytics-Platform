@@ -28,8 +28,12 @@ jobs:
             cd /opt/polysignal
             git pull origin main
 
-            echo "=== Installing dependencies ==="
+            echo "=== Ensuring ENABLE_BACKGROUND_JOBS is set ==="
             cd /opt/polysignal/backend
+            grep -q "ENABLE_BACKGROUND_JOBS" .env || echo "ENABLE_BACKGROUND_JOBS=true" >> .env
+            grep "ENABLE_BACKGROUND_JOBS" .env
+
+            echo "=== Installing dependencies ==="
             source venv/bin/activate
             pip install -r requirements.txt -q
 
