@@ -41,7 +41,7 @@ function EventCard({ event, highlighted = false }) {
       to={`/event/${event.event_id}`}
       className={`card hover:shadow-lg transition-all duration-500 cursor-pointer group block ${
         highlighted
-          ? 'ring-2 ring-primary-500 shadow-xl shadow-primary-300/60 dark:shadow-primary-900/50 bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24 animate-pulse'
+          ? 'ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24 animate-glow-ring'
           : ''
       }`}
     >
@@ -115,9 +115,18 @@ function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [liveEvents, setLiveEvents] = useState([])
-  const [highlightedEventId, setHighlightedEventId] = useState(searchParams.get('highlightEvent') || null)
-  const [highlightedEventSlug, setHighlightedEventSlug] = useState(searchParams.get('highlightSlug') || null)
-  const isHighlightActive = useRef(!!(searchParams.get('highlightEvent') || searchParams.get('highlightSlug')))
+
+  // Read highlight targets from URL params once on mount — kept stable in refs
+  // so that re-renders from query data arriving don't reset them.
+  const highlightIdParam   = searchParams.get('highlightEvent') || null
+  const highlightSlugParam = searchParams.get('highlightSlug')  || null
+  const [highlightedEventId,   setHighlightedEventId]   = useState(highlightIdParam)
+  const [highlightedEventSlug, setHighlightedEventSlug] = useState(highlightSlugParam)
+
+  // True while the highlight window is active — used to suppress list rewrites
+  const isHighlightActive = useRef(!!(highlightIdParam || highlightSlugParam))
+  // Whether we've already triggered the scroll + timer for this highlight session
+  const highlightTimerSet = useRef(false)
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', search],
@@ -126,18 +135,25 @@ function Dashboard() {
     refetchInterval: 60_000,
   })
 
+  // Sync REST query data → liveEvents, but never overwrite while highlight is active
   useEffect(() => {
-    if (Array.isArray(events)) {
+    if (Array.isArray(events) && !isHighlightActive.current) {
       setLiveEvents(events)
+    } else if (Array.isArray(events) && isHighlightActive.current) {
+      // Merge: keep list but ensure highlighted event is present if it arrived
+      setLiveEvents(prev => {
+        const already = prev.some(e =>
+          String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
+        )
+        if (already) return prev
+        // Highlighted event now in fresh data — add it to our live list
+        const newEvent = events.find(e =>
+          String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
+        )
+        return newEvent ? [newEvent, ...prev] : events
+      })
     }
-  }, [events])
-
-  useEffect(() => {
-    const highlightFromQuery = searchParams.get('highlightEvent')
-    const highlightSlugFromQuery = searchParams.get('highlightSlug')
-    if (highlightFromQuery) setHighlightedEventId(highlightFromQuery)
-    if (highlightSlugFromQuery) setHighlightedEventSlug(highlightSlugFromQuery)
-  }, [searchParams])
+  }, [events, highlightedEventId, highlightedEventSlug])
 
   // WebSocket for live dashboard updates — now supported via Droplet + Load Balancer
   useEffect(() => {
@@ -156,6 +172,18 @@ function Dashboard() {
             // Don't overwrite while highlight is active — would break pinned order
             if (!isHighlightActive.current) {
               setLiveEvents(payload.data)
+            } else {
+              // Still check if highlighted event arrived via WS
+              setLiveEvents(prev => {
+                const already = prev.some(e =>
+                  String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
+                )
+                if (already) return prev
+                const newEvent = payload.data.find(e =>
+                  String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
+                )
+                return newEvent ? [newEvent, ...prev] : prev
+              })
             }
           }
         } catch {
@@ -182,7 +210,7 @@ function Dashboard() {
         socket.close()
       }
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sourceEvents = liveEvents.length > 0 ? liveEvents : (events || [])
 
@@ -202,27 +230,30 @@ function Dashboard() {
     return [highlighted, ...rest]
   }, [sourceEvents, search, highlightedEventId, highlightedEventSlug])
 
+  // Scroll to top and start clear timer once highlighted card appears in the list
   useEffect(() => {
-    if ((!highlightedEventId && !highlightedEventSlug) || !filtered.length) return
+    if ((!highlightedEventId && !highlightedEventSlug) || highlightTimerSet.current) return
 
     const highlightedEvent = filtered.find(e =>
       String(e.event_id) === String(highlightedEventId) || e.event_slug === highlightedEventSlug
     )
-    if (!highlightedEvent) return
+    if (!highlightedEvent) return   // event not in list yet — wait for next render
 
-    // Card is always pinned first — just scroll to top immediately
+    // Card is always pinned first — scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' })
-
+    highlightTimerSet.current = true
     isHighlightActive.current = true
+
     const clearTimer = setTimeout(() => {
       isHighlightActive.current = false
+      highlightTimerSet.current = false
       setHighlightedEventId(null)
       setHighlightedEventSlug(null)
       const nextParams = new URLSearchParams(searchParams)
       nextParams.delete('highlightEvent')
       nextParams.delete('highlightSlug')
       setSearchParams(nextParams, { replace: true })
-    }, 10000)
+    }, 12000)
 
     return () => {
       clearTimeout(clearTimer)
@@ -259,9 +290,9 @@ function Dashboard() {
           />
         </div>
 
-        {highlightedEventId && (
+        {(highlightedEventId || highlightedEventSlug) && (
           <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-900/40 dark:bg-primary-900/20 dark:text-primary-300">
-            Your newly extracted event is highlighted below.
+            ✨ Your newly extracted event is pinned at the top and highlighted below.
           </div>
         )}
 

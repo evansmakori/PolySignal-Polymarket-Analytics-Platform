@@ -23,6 +23,17 @@ export default {
           900: '#0c4a6e',
         },
       },
+      keyframes: {
+        'glow-ring': {
+          '0%':   { boxShadow: '0 0 0 0 rgba(2, 132, 199, 0.7),  0 0 0 0 rgba(2, 132, 199, 0.4)' },
+          '40%':  { boxShadow: '0 0 16px 6px rgba(2, 132, 199, 0.5), 0 0 32px 12px rgba(2, 132, 199, 0.2)' },
+          '70%':  { boxShadow: '0 0 8px 3px rgba(2, 132, 199, 0.4), 0 0 20px 8px rgba(2, 132, 199, 0.15)' },
+          '100%': { boxShadow: '0 0 16px 6px rgba(2, 132, 199, 0.5), 0 0 32px 12px rgba(2, 132, 199, 0.2)' },
+        },
+      },
+      animation: {
+        'glow-ring': 'glow-ring 1.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

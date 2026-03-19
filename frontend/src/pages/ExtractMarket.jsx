@@ -33,9 +33,12 @@ function ExtractMarket() {
           clearInterval(interval)
           // Invalidate ALL cached queries so dashboard shows fresh data
           await queryClient.invalidateQueries()
+          // Small delay to let the backend finish indexing before we redirect
+          // so the fresh event appears in the list when the dashboard loads
+          await new Promise(resolve => setTimeout(resolve, 800))
           const params = new URLSearchParams()
-          if (status.event_id) params.set('highlightEvent', String(status.event_id))
-          if (status.event_slug) params.set('highlightSlug', String(status.event_slug))
+          if (status.event_id)   params.set('highlightEvent', String(status.event_id))
+          if (status.event_slug) params.set('highlightSlug',  String(status.event_slug))
           const target = params.toString() ? `/?${params.toString()}` : '/'
           navigate(target)
         } else if (status.status === 'error') {
