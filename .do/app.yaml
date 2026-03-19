@@ -111,5 +111,5 @@ services:
     instance_count: 1
     envs:
       - key: VITE_API_BASE_URL
-        value: "https://polysignal-zp2r4.ondigitalocean.app"
+        value: "http://137.184.76.88"
         scope: BUILD_TIME
