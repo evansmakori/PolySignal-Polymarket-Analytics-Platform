@@ -39,10 +39,10 @@ function EventCard({ event, highlighted = false }) {
     <Link
       id={`event-card-${event.event_id}`}
       to={`/event/${event.event_id}`}
-      className={`card hover:shadow-lg transition-all duration-500 cursor-pointer group block ${
+      className={`card cursor-pointer group block ${
         highlighted
-          ? 'ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/10 scroll-mt-24 animate-glow-ring'
-          : ''
+          ? 'highlight-glow scroll-mt-24'
+          : 'hover:shadow-lg transition-all duration-500'
       }`}
     >
       <div className="flex items-start justify-between mb-2 gap-2">
