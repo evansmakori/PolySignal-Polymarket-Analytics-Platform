@@ -54,6 +54,7 @@ async def get_ai_status():
 
 
 @router.get("/predict/{market_id}")
+@router.get("/prediction/{market_id}")
 async def predict_market_price(market_id: str):
     """
     Predict future price movement for a specific market.
