@@ -28,24 +28,26 @@ jobs:
             cd /opt/polysignal
             git pull origin main
 
-            echo "=== Ensuring ENABLE_BACKGROUND_JOBS is set ==="
+            echo "=== Ensuring env vars are set ==="
             cd /opt/polysignal/backend
             grep -q "ENABLE_BACKGROUND_JOBS" .env || echo "ENABLE_BACKGROUND_JOBS=true" >> .env
-            grep "ENABLE_BACKGROUND_JOBS" .env
 
             echo "=== Installing dependencies ==="
             source venv/bin/activate
             pip install -r requirements.txt -q
 
-            echo "=== Updating service config (1 worker to save DB connections) ==="
+            echo "=== Updating service config (1 worker) ==="
             sed -i 's/--workers 2/--workers 1/g' /etc/systemd/system/polysignal.service
             systemctl daemon-reload
 
-            echo "=== Restarting service ==="
+            echo "=== Refreshing nginx config ==="
+            nginx -t && systemctl reload nginx || true
+
+            echo "=== Restarting FastAPI service ==="
             systemctl restart polysignal
 
-            echo "=== Waiting for startup (up to 60s) ==="
-            for i in $(seq 1 12); do
+            echo "=== Waiting for startup (up to 90s) ==="
+            for i in $(seq 1 18); do
               sleep 5
               STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health)
               if [ "$STATUS" = "200" ]; then
@@ -54,6 +56,6 @@ jobs:
               fi
               echo "  Attempt $i: status=$STATUS, waiting..."
             done
-            echo "❌ Health check failed after 60s"
+            echo "❌ Health check failed after 90s"
             systemctl status polysignal --no-pager | tail -20
             exit 1
