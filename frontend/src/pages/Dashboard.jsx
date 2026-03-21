@@ -296,19 +296,22 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Initial loading — only show spinner when we have no data at all yet */}
         {isLoading && sourceEvents.length === 0 && (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
           </div>
         )}
 
+        {/* Error — only show when we truly have nothing to display */}
         {error && sourceEvents.length === 0 && (
           <div className="card bg-red-50 dark:bg-red-900/20 text-center py-12">
             <p className="text-red-700 dark:text-red-300">Failed to load events. Please try again.</p>
           </div>
         )}
 
-        {!isLoading && !error && filtered.length === 0 && (
+        {/* Empty state — only when done loading and genuinely no events */}
+        {!isLoading && !error && sourceEvents.length === 0 && filtered.length === 0 && (
           <div className="card text-center py-16">
             <BarChart2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No events yet</h3>
@@ -324,7 +327,8 @@ function Dashboard() {
           </div>
         )}
 
-        {!isLoading && filtered.length > 0 && (
+        {/* Events grid — show whenever we have data, regardless of loading/refetch state */}
+        {filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filtered.map(event => (
               <EventCard
