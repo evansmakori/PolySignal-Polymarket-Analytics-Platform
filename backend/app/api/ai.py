@@ -17,6 +17,7 @@ from ..ml.sentiment_analyzer import SentimentAnalyzer
 from ..ml.anomaly_detector import AnomalyDetector
 from ..ml.trading_agent import TradingAgent
 from ..services.market_service import MarketService
+from ..models.market import MarketFilter
 
 logger = logging.getLogger(__name__)
 
@@ -371,5 +372,3 @@ async def get_model_info():
     }
 
 
-# Import MarketFilter for the endpoints
-from ..models.market import MarketFilter

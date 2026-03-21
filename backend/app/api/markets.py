@@ -488,8 +488,9 @@ async def search_markets(
                 "url": f"https://polymarket.com/market/{m.get('slug')}" if m.get("slug") else None,
             })
     except Exception as e:
-        pass
-    
+        import logging
+        logging.getLogger(__name__).warning(f"Market search error: {e}")
+
     if include_events:
         try:
             events = pm_search_events(q, limit=min(limit, 10))
@@ -507,8 +508,9 @@ async def search_markets(
                     "url": f"https://polymarket.com/event/{e.get('slug')}" if e.get("slug") else None,
                     "market_count": len(e.get("markets") or []),
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Event search error: {e}")
     
     return results
 
@@ -663,14 +665,6 @@ async def list_events(
     pool = await get_pool()
     async with pool.acquire() as conn:
         # Dashboard shows: active events + resolved events within last 7 days
-        lifecycle_filter = """
-            AND (
-                lifecycle_status = 'active'
-                OR lifecycle_status IS NULL
-                OR (lifecycle_status = 'resolved' AND resolved_at > NOW() - INTERVAL '7 days')
-            )
-            AND lifecycle_status != 'archived'
-        """
         # Query against materialized view (latest snapshot per market) — very fast
         _events_sql = """
             SELECT
@@ -693,6 +687,12 @@ async def list_events(
                 END as resolved_at
             FROM latest_market_stats
             WHERE event_id IS NOT NULL
+            AND (
+                lifecycle_status = 'active'
+                OR lifecycle_status IS NULL
+                OR (lifecycle_status = 'resolved' AND resolved_at > NOW() - INTERVAL '7 days')
+            )
+            AND COALESCE(lifecycle_status, 'active') != 'archived'
             {search_filter}
             GROUP BY event_id
             HAVING BOOL_OR(COALESCE(lifecycle_status, 'active') = 'active')
@@ -706,7 +706,7 @@ async def list_events(
         if search:
             rows = await conn.fetch(
                 _events_sql.format(
-                    search_filter="AND (event_title ILIKE $1 OR title ILIKE $1)",
+                    search_filter="AND (event_title ILIKE $1 OR event_slug ILIKE $1)",
                     limit_param=2
                 ),
                 f"%{search}%", limit
@@ -720,8 +720,9 @@ async def list_events(
 
 
 @router.get("/events/{event_id}/markets", response_model=List[Dict[str, Any]])
-async def get_event_markets(event_id: str):
+async def get_event_markets(event_id: str, limit: int = Query(200, ge=1, le=500)):
     """Get all markets for a specific event."""
+    import datetime
     from ..core.database import get_pool
     pool = await get_pool()
     async with pool.acquire() as conn:
@@ -730,10 +731,19 @@ async def get_event_markets(event_id: str):
             FROM polymarket_market_stats
             WHERE event_id = $1
             ORDER BY market_id, snapshot_ts DESC
-        """, event_id)
+            LIMIT $2
+        """, event_id, limit)
         if not rows:
             raise HTTPException(status_code=404, detail=f"Event {event_id} not found")
-        return [dict(r) for r in rows]
+
+        def _json_safe(val):
+            if isinstance(val, (datetime.datetime, datetime.date)):
+                return val.isoformat()
+            if isinstance(val, float) and val != val:  # NaN check
+                return None
+            return val
+
+        return [{k: _json_safe(v) for k, v in dict(r).items()} for r in rows]
 
 
 @router.get("/{market_id}", response_model=Dict[str, Any])

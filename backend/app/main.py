@@ -7,11 +7,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import settings
-from .core.database import create_pool, close_pool, ensure_tables
+from .core.database import create_pool, close_pool, ensure_tables, ensure_tables_and_refresh, refresh_latest_market_stats
 from .api.markets import router as markets_router
 from .api.websocket import router as websocket_router
 from .api.ai import router as ai_router
 
+
+
+async def _run_periodic_view_refresh():
+    """Periodically refresh the latest_market_stats materialized view every 60 seconds."""
+    while True:
+        await asyncio.sleep(60)
+        try:
+            await refresh_latest_market_stats()
+        except Exception as e:
+            print(f"⚠ Periodic view refresh error: {e}")
 
 
 async def _init_db_and_jobs():
@@ -31,10 +41,12 @@ async def _init_db_and_jobs():
                     await conn.execute("SET search_path TO public")
                 except Exception:
                     pass
-            await ensure_tables()
+            # Create tables and do an initial materialized view refresh
+            await ensure_tables_and_refresh()
             print(f"✓ Database pool created on attempt {attempt}")
             print("✓ PostgreSQL connection pool initialized")
             print("✓ Database tables ensured")
+            print("✓ Materialized view refreshed on startup")
             break
         except Exception as e:
             print(f"⚠ DB connection attempt {attempt}/10 failed: {e}")
@@ -43,6 +55,9 @@ async def _init_db_and_jobs():
             else:
                 print("⚠ Database initialization warning: could not connect after 10 attempts")
                 return
+
+    # Always run the periodic materialized view refresh (every 60 seconds)
+    asyncio.create_task(_run_periodic_view_refresh())
 
     enable_jobs = settings.ENABLE_BACKGROUND_JOBS
     if enable_jobs:

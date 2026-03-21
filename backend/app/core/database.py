@@ -194,18 +194,9 @@ _pool: Optional[asyncpg.Pool] = None
 
 
 async def _set_search_path(conn):
-    """Set search_path on every new connection."""
-    # Use the user's default schema if available, fall back to public
+    """Set search_path on every new connection. Always uses public schema."""
     try:
-        current_user = await conn.fetchval("SELECT current_user")
-        schemas = await conn.fetch(
-            "SELECT schema_name FROM information_schema.schemata WHERE schema_owner = current_user"
-        )
-        if schemas:
-            schema_name = schemas[0]['schema_name']
-            await conn.execute(f'SET search_path TO "{schema_name}", public')
-        else:
-            await conn.execute("SET search_path TO public")
+        await conn.execute("SET search_path TO public")
     except Exception:
         pass
 
@@ -254,6 +245,12 @@ async def close_pool() -> None:
 # ---------------------------------------------------------------------------
 # Schema initialisation
 # ---------------------------------------------------------------------------
+async def ensure_tables_and_refresh() -> None:
+    """Ensure tables exist and refresh the materialized view if it has data."""
+    await ensure_tables()
+    await refresh_latest_market_stats()
+
+
 async def ensure_tables() -> None:
     """Create all tables and indexes if they do not already exist."""
     try:
@@ -414,6 +411,18 @@ async def upsert_history(token_id: str, bars: list) -> None:
         )
 
 
+async def _auto_refresh_materialized_view(conn) -> None:
+    """Refresh the latest_market_stats materialized view after an upsert.
+    Uses CONCURRENTLY when possible to avoid locking."""
+    try:
+        await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY latest_market_stats")
+    except Exception:
+        try:
+            await conn.execute("REFRESH MATERIALIZED VIEW latest_market_stats")
+        except Exception as e:
+            print(f"⚠ Materialized view refresh warning: {e}")
+
+
 async def upsert_market_stats(stats: dict) -> None:
     """Insert or update a market stats snapshot.
 
@@ -512,10 +521,18 @@ async def upsert_market_stats(stats: dict) -> None:
                 closed              = EXCLUDED.closed,
                 resolved            = EXCLUDED.resolved,
                 automatically_resolved = EXCLUDED.automatically_resolved,
-                lifecycle_status    = EXCLUDED.lifecycle_status,
+                lifecycle_status    = CASE
+                                    WHEN polymarket_market_stats.lifecycle_status IN ('archived', 'resolved')
+                                         AND EXCLUDED.lifecycle_status = 'active'
+                                         AND NOT COALESCE(EXCLUDED.resolved, false)
+                                         AND NOT COALESCE(EXCLUDED.closed, false)
+                                         AND NOT COALESCE(EXCLUDED.automatically_resolved, false)
+                                    THEN polymarket_market_stats.lifecycle_status
+                                    ELSE EXCLUDED.lifecycle_status
+                                  END,
                 resolved_at         = COALESCE(EXCLUDED.resolved_at, polymarket_market_stats.resolved_at)
             """,
-            # --- $1 .. $51 ---
+            # --- $1 .. $62 ---
             stats.get("market_id"),
             _to_ts(stats.get("snapshot_ts")),
             # tokens: accept both naming conventions
@@ -608,6 +625,8 @@ async def upsert_market_stats(stats: dict) -> None:
                 else None
             ),
         )
+        # Auto-refresh the materialized view so queries always see fresh data
+        await _auto_refresh_materialized_view(conn)
 
 
 async def refresh_latest_market_stats() -> None:
@@ -615,9 +634,7 @@ async def refresh_latest_market_stats() -> None:
     try:
         pool = await get_pool()
         async with pool.acquire() as conn:
-            await conn.execute(
-                "REFRESH MATERIALIZED VIEW CONCURRENTLY latest_market_stats"
-            )
+            await _auto_refresh_materialized_view(conn)
     except Exception as e:
         print(f"⚠ Materialized view refresh warning: {e}")
 
