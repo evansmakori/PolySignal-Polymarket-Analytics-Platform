@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, BarChart2, ChevronRight, Calendar, Archive, Clock, CheckCircle, Activity, Sparkles } from 'lucide-react'
 import { createEventsWebSocket, marketsApi } from '../services/api'
@@ -133,6 +133,8 @@ function Dashboard() {
     queryFn: () => marketsApi.getEvents({ search: search || undefined, limit: 100 }),
     staleTime: 30_000,
     refetchInterval: 60_000,
+    // Keep showing previous data while new data loads — prevents blank flash on navigation
+    placeholderData: keepPreviousData,
   })
 
   // Sync REST query data → liveEvents, but never overwrite while highlight is active
