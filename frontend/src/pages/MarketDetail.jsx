@@ -99,7 +99,8 @@ function MarketDetail() {
         : [],
   } : null
 
-  if (isLoading) {
+  // Only show full-page spinner on initial load (no data yet)
+  if (isLoading && !market) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
@@ -107,7 +108,8 @@ function MarketDetail() {
     )
   }
 
-  if (error) {
+  // Only show error when there's no cached data to fall back on
+  if (error && !market) {
     return (
       <div className="card bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
         <p className="text-red-800 dark:text-red-300">
