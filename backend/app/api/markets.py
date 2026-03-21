@@ -122,6 +122,39 @@ async def extract_market_data(
                 base_rate=request.base_rate,
                 progress_callback=lambda step: _extraction_jobs[job_id].update({"step": step}),
             )
+            # Auto-compute scores for newly extracted markets so they're not NULL
+            _extraction_jobs[job_id]["step"] = "Computing scores..."
+            try:
+                from ..core.database import get_pool, TBL_STATS
+                from ..core.scoring import calculate_market_score
+                pool = await get_pool()
+                market_ids = result.get("market_ids", [])
+                async with pool.acquire() as conn:
+                    for mid in market_ids:
+                        row = await conn.fetchrow(
+                            f"SELECT * FROM {TBL_STATS} WHERE market_id = $1 ORDER BY snapshot_ts DESC LIMIT 1",
+                            str(mid)
+                        )
+                        if row:
+                            score_result = calculate_market_score(dict(row))
+                            await conn.execute(
+                                f"""UPDATE {TBL_STATS}
+                                    SET predictive_score = $1, score_category = $2
+                                    WHERE market_id = $3 AND snapshot_ts = $4""",
+                                score_result["score"],
+                                score_result["category"],
+                                str(mid),
+                                row["snapshot_ts"],
+                            )
+                    # Refresh materialized view so events list reflects new scores
+                    try:
+                        await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY latest_market_stats")
+                    except Exception:
+                        await conn.execute("REFRESH MATERIALIZED VIEW latest_market_stats")
+            except Exception as score_err:
+                # Non-fatal — extraction succeeded, scores just won't show immediately
+                _extraction_jobs[job_id]["score_error"] = str(score_err)
+
             _extraction_jobs[job_id]["status"] = "done"
             _extraction_jobs[job_id]["step"] = "Complete!"
             _extraction_jobs[job_id]["market_ids"] = result.get("market_ids", [])
@@ -667,7 +700,7 @@ async def list_events(
                     NOT BOOL_AND(lifecycle_status = 'archived')
                     AND MAX(resolved_at) > NOW() - INTERVAL '7 days'
                 )
-            ORDER BY total_volume DESC NULLS LAST
+            ORDER BY last_updated DESC NULLS LAST
             LIMIT ${limit_param}
         """
         if search:
