@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { Download, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Download, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { marketsApi } from '../services/api'
 
 function ExtractMarket() {
@@ -133,15 +133,18 @@ function ExtractMarket() {
       {/* Job Status */}
       {jobStatus && (
         <div className={`card border ${
-          jobStatus.status === 'done' || jobStatus.status === 'timeout'
+          jobStatus.status === 'done'
             ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+            : jobStatus.status === 'timeout'
+            ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
             : jobStatus.status === 'error'
             ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
             : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
         }`}>
           <div className="flex items-start space-x-3">
             {jobStatus.status === 'running' && <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 animate-spin" />}
-            {(jobStatus.status === 'done' || jobStatus.status === 'timeout') && <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />}
+            {jobStatus.status === 'done' && <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />}
+            {jobStatus.status === 'timeout' && <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />}
             {jobStatus.status === 'error' && <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />}
             <div className="flex-1">
               {jobStatus.status === 'running' && (
@@ -160,13 +163,23 @@ function ExtractMarket() {
                   </p>
                 </>
               )}
-              {(jobStatus.status === 'done' || jobStatus.status === 'timeout') && (
+              {jobStatus.status === 'done' && (
                 <>
                   <h3 className="font-semibold text-green-900 dark:text-green-100 mb-1">
                     Extraction complete!
                   </h3>
                   <p className="text-base text-green-700 dark:text-green-300">
                     {jobStatus.step || 'Redirecting to dashboard...'}
+                  </p>
+                </>
+              )}
+              {jobStatus.status === 'timeout' && (
+                <>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">
+                    Extraction timed out
+                  </h3>
+                  <p className="text-base text-yellow-800 dark:text-yellow-300">
+                    The market may still be processing in the background. Try re-extracting in a minute.
                   </p>
                 </>
               )}

@@ -236,9 +236,12 @@ export const getTradingSignal = aiApi.getTradingSignal
 // WebSocket connection helper
 // WebSocket must connect to the Droplet Load Balancer directly
 // because App Platform's ingress blocks WebSocket upgrades
+// In dev, use env var or localhost. In production, keep the hardcoded droplet WS URL
+// (App Platform blocks WebSocket upgrades, so we must connect directly to the Droplet).
+// Falls back to current domain if the env var VITE_WS_URL is set.
 const WS_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || 'ws://localhost:8000').replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-  : 'ws://138.197.231.111'
+  : (import.meta.env.VITE_WS_URL || 'ws://138.197.231.111')
 
 const getWsBaseUrl = () => WS_BASE_URL
 

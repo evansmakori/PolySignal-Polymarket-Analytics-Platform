@@ -78,13 +78,14 @@ function EventDetail() {
     low: 'Low (<$10K)',
   }
 
-  if (isLoading) return (
+  // Only show full-page spinner on initial load (no data yet)
+  if (isLoading && !markets) return (
     <div className="flex items-center justify-center py-20">
       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
     </div>
   )
 
-  if (error) return (
+  if (error && !markets) return (
     <div className="card bg-red-50 dark:bg-red-900/20 text-center py-12">
       <p className="text-red-700 dark:text-red-300">Failed to load event markets.</p>
       <Link to="/" className="text-primary-600 mt-4 inline-block">← Back to Dashboard</Link>

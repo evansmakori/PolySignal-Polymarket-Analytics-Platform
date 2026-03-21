@@ -100,7 +100,14 @@ function ScoreBreakdownChart({ marketId }) {
       normalized: breakdown.normalized_components?.sentiment_momentum,
       weighted: breakdown.weighted_components?.sentiment_momentum,
       value: metrics?.sentiment_momentum,
-      format: (v) => v !== null && v !== undefined ? v.toExponential(2) : 'N/A'
+      format: (v) => {
+        if (v === null || v === undefined) return 'N/A'
+        const abs = Math.abs(v)
+        if (abs === 0) return '0.000'
+        if (abs < 0.0001) return (v * 1e6).toFixed(2) + 'e-6'
+        if (abs < 0.01) return v.toFixed(6)
+        return v.toFixed(4)
+      }
     },
   ]
 

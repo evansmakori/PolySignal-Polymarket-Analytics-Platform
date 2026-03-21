@@ -14,10 +14,11 @@ function PriceChart({ data, title = 'Price History' }) {
   }
 
   // Format data for recharts
+  // Use slice() before reverse() to avoid mutating the original data prop
   const chartData = data.map(point => ({
     time: new Date(point.ts || point.t).toLocaleDateString(),
     price: point.price,
-  })).reverse() // Reverse to show chronological order
+  })).slice().reverse() // slice() prevents mutation of original array
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -27,8 +28,8 @@ function PriceChart({ data, title = 'Price History' }) {
       // Calculate implied probability for NO
       const noPrice = 1 - price
       
-      // Find previous point for change calculation
-      const currentIndex = chartData.findIndex(d => d.time === label)
+      // Use payload index directly to find previous point (avoids duplicate-date issue)
+      const currentIndex = payload[0]?.index ?? chartData.findIndex(d => d.time === label)
       const previousPoint = currentIndex > 0 ? chartData[currentIndex - 1] : null
       const priceChange = previousPoint && previousPoint.price !== 0 ? ((price - previousPoint.price) / previousPoint.price) * 100 : null
 
