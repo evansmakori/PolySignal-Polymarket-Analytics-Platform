@@ -10,6 +10,7 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 
 | | |
 |---|---|
+| **Video Demo** | [PolySignal Video Demo] (https://vimeo.com/1175286542?fl=pl&fe=vl) |
 | **Live Platform** | [https://polysignal-zp2r4.ondigitalocean.app/](https://polysignal-zp2r4.ondigitalocean.app/) |
 | **API Docs** | [https://polysignal-zp2r4.ondigitalocean.app/api/docs](https://polysignal-zp2r4.ondigitalocean.app/api/docs) |
 | **API Health Check** | [https://polysignal-zp2r4.ondigitalocean.app/api/health](https://polysignal-zp2r4.ondigitalocean.app/api/health) |
