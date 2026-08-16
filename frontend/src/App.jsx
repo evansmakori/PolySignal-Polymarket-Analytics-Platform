@@ -8,9 +8,13 @@ import ExtractMarket from './pages/ExtractMarket'
 import Rankings from './pages/Rankings'
 import EventComparison from './pages/EventComparison'
 
+// Match the Vite `base` so React Router routes line up when the app is served
+// from a sub-path (GitHub Pages project site) vs the domain root (Cloudflare).
+const routerBase = (import.meta.env.VITE_BASE_PATH || '/').replace(/\/$/, '') || '/'
+
 function App() {
   return (
-    <Router>
+    <Router basename={routerBase}>
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
