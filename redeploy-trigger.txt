@@ -1,0 +1,5 @@
+Trigger redeploy after JSX fix
+
+This file was added by GitHub Copilot to trigger a Pages redeploy after fixing a JSX syntax error in frontend/src/components/MarketMetaSidebar.jsx.
+
+Timestamp: 2026-08-16T17:21:50Z
