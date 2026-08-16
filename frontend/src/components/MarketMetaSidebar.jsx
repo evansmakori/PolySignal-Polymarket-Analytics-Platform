@@ -79,6 +79,52 @@ function MarketMetaSidebar({ market }) {
         )}
       </div>
 
+      {/* Bet Calculator */}
+      <div className="card">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Bet Calculator</h3>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={betAmount}
+              onChange={(e) => setBetAmount(e.target.value)}
+              placeholder="Enter bet amount"
+              className="w-full p-2 border rounded bg-white dark:bg-gray-800"
+            />
+          </div>
+
+          {expectedReturns ? (
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">YES return</span>
+                <span className="font-medium">{expectedReturns.yesExpectedReturn.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">YES profit</span>
+                <span className={`font-medium ${expectedReturns.yesProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {expectedReturns.yesProfit.toFixed(4)}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">NO return</span>
+                <span className="font-medium">{expectedReturns.noExpectedReturn.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">NO profit</span>
+                <span className={`font-medium ${expectedReturns.noProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {expectedReturns.noProfit.toFixed(4)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">Enter an amount to see expected returns and profit/loss.</div>
+          )}
+        </div>
+      </div>
+
       {/* Expected Value */}
       <div className="card">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Expected Value</h3>
