@@ -2,7 +2,7 @@
 
 > **Live App:** 🚀 [https://evansmakori.github.io/polysignal/](https://evansmakori.github.io/polysignal/)
 
-PolySignal is a real-time analytics and AI-powered trading intelligence platform for [Polymarket](https://polymarket.com) — the world's largest prediction market. It transforms raw market data into actionable insights using machine learning, live data feeds, and a proprietary scoring system.
+Polysignal is a real-time analytics and AI-powered trading intelligence platform for [Polymarket](https://polymarket.com) — the world's largest prediction market. It transforms raw market data into actionable insights using machine learning, live data feeds, and a proprietary scoring system.
 
 ---
 
@@ -10,7 +10,7 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 
 | | |
 |---|---|
-| **Video Demo** | [PolySignal Video Demo] (https://vimeo.com/1175286542?fl=pl&fe=vl) |
+| **Video Demo** | [Polysignal Video Demo](https://vimeo.com/1175286542?fl=pl&fe=vl) |
 | **Live Platform** | [https://evansmakori.github.io/polysignal/](https://evansmakori.github.io/polysignal/) |
 | **API Docs** | [https://polysignal-api.onrender.com/docs](https://polysignal-api.onrender.com/docs) |
 | **API Health Check** | [https://polysignal-api.onrender.com/health](https://polysignal-api.onrender.com/health) |
@@ -67,11 +67,11 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 ### Infrastructure & Cloud (free deployment)
 | Service | Purpose |
 |---|---|
-| Cloudflare Pages | Hosts the React frontend (SPA fallback via Functions `_middleware.js`) |
+| GitHub Pages | Hosts the React frontend ([https://evansmakori.github.io/polysignal/](https://evansmakori.github.io/polysignal/)) — always-on, $0 |
 | Render (free web service) | Hosts the FastAPI backend (`render.yaml` Blueprint, Python 3.13.5) |
 | Supabase (PostgreSQL) | Managed Postgres database (session pooler on port 5432, `sslmode=require`) |
+| GitHub Actions | CI — builds the frontend and deploys it to GitHub Pages (`pages.yml`) |
 | GitHub Actions | Keep-alive cron — pings the backend + DB every 10 min so free tiers don't sleep |
-| GitHub Actions | Optional CI — build the frontend on push (Cloudflare Git integration) |
 
 ### External APIs
 | API | Purpose |
@@ -87,8 +87,8 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 Users
   │
   ▼
-Cloudflare Pages  (https://<project>.pages.dev)
-  https://polysignal.pages.dev
+GitHub Pages  (https://evansmakori.github.io/polysignal/)
+  https://evansmakori.github.io/polysignal
   ├── /api/*  ─┐  VITE_API_BASE_URL (baked at build time)
   ├── /ws/*    ─┼─►  Render free web service  (https://polysignal-api.onrender.com)
   ▼             │   └── FastAPI + Uvicorn + in-process background jobs
@@ -102,7 +102,7 @@ Keep-alive (every 10 min, GitHub Actions cron):
 
 ### CI/CD Pipeline
 Every push to `main` triggers:
-1. **Cloudflare Pages** — Git integration rebuilds and publishes the frontend
+1. **GitHub Actions (`pages.yml`)** — builds the React app and deploys it to GitHub Pages
 2. **Render** — autoDeploy rebuilds and redeploys the backend from `render.yaml`
 3. **GitHub Actions: Keep Free Tier Alive** — cron keeps the free stack awake
 
@@ -111,7 +111,7 @@ Every push to `main` triggers:
 ## 🗂️ Project Structure
 
 ```
-PolySignal/
+polysignal/
 ├── backend/
 │   ├── app/
 │   │   ├── api/              # REST API & WebSocket route handlers
@@ -137,17 +137,20 @@ PolySignal/
 │   ├── requirements.txt
 │   └── run.py
 ├── frontend/
-│   ├── functions/_middleware.js  # SPA fallback for Cloudflare Pages
+│   ├── public/404.html       # SPA deep-link fallback for GitHub Pages
+│   ├── functions/_middleware.js  # SPA fallback (used only if hosted on Cloudflare Pages)
 │   ├── src/
 │   │   ├── components/       # Reusable UI components
 │   │   ├── pages/            # Page-level components
 │   │   ├── services/api.js   # API client (honors VITE_API_BASE_URL / VITE_WS_URL)
-│   │   └── App.jsx
+│   │   └── App.jsx           # Routes (Router basename from VITE_BASE_PATH)
+│   ├── vite.config.js        # `base` configurable via VITE_BASE
 │   └── package.json
 ├── render.yaml               # Render Blueprint: free FastAPI backend (Python 3.13.5)
-├── docs/FREE_DEPLOYMENT.md   # Step-by-step $0 deploy: Cloudflare + Render + Supabase
+├── docs/FREE_DEPLOYMENT.md   # Step-by-step $0 deploy guide (Render + Supabase)
 ├── scripts/                  # Local helper shell scripts
 └── .github/workflows/        # GitHub Actions
+    ├── pages.yml             # Builds frontend → deploys to GitHub Pages
     └── keep-alive.yaml       # Keeps the free Render + Supabase stack awake
 ```
 
@@ -222,7 +225,7 @@ Frontend runs at: `http://localhost:5173`
 
 ## 🧠 The Unified Risk Score (URS)
 
-The URS is PolySignal's proprietary scoring engine:
+The URS is Polysignal's proprietary scoring engine:
 
 | Factor | Weight | Description |
 |---|---|---|
@@ -245,21 +248,21 @@ Scores range **0–100**:
 ## 🔄 CI/CD
 
 Every push to `main` triggers:
-1. **Cloudflare Pages** — rebuilds & publishes the React frontend (Git integration)
+1. **GitHub Actions (`pages.yml`)** — builds the React frontend and deploys it to GitHub Pages
 2. **Render** — autoDeploy rebuilds the FastAPI backend via `render.yaml`
 3. **GitHub Actions: Keep Free Tier Alive** — cron keeps the free stack awake
 
 ## 💸 Free ($0) Deployment
 
-PolySignal can also run **entirely free with no credit card** and without
-sleeping, using Cloudflare Pages (frontend, Git integration) + Render
+Polysignal can also run **entirely free with no credit card** and without
+sleeping, using GitHub Pages (frontend, Git integration) + Render
 (backend) + Supabase (Postgres), kept awake by a scheduled GitHub Action:
 
 - `render.yaml` — Render Blueprint for the FastAPI backend (free plan)
 - `.github/workflows/keep-alive.yaml` — active keep-alive workflow (pings backend +
   database every 10 min so the free tiers don't sleep). The template is in
   `docs/workflows/keep-alive.yaml`.
-- `frontend/functions/_middleware.js` — SPA fallback for Cloudflare Pages
+- `frontend/functions/_middleware.js` — SPA fallback (useful only if hosted on Cloudflare Pages)
 
 Full step-by-step guide: **[docs/FREE_DEPLOYMENT.md](docs/FREE_DEPLOYMENT.md)**
 
@@ -273,8 +276,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙌 Built With ❤️ on the Free Stack
 
-PolySignal is proudly deployed on:
-- [Cloudflare Pages](https://pages.cloudflare.com/) — frontend (React), free tier
+Polysignal is proudly deployed on:
+- [GitHub Pages](https://pages.github.com/) — frontend (React), free tier, always-on at `https://evansmakori.github.io/polysignal/`
 - [Render](https://render.com/) — FastAPI backend (free web service via `render.yaml`)
 - [Supabase](https://supabase.com/) — managed Postgres database (free tier)
 - [GitHub Actions](https://github.com/features/actions) — keep-alive cron
