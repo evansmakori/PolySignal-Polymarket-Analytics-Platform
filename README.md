@@ -1,6 +1,6 @@
-# PolySignal — Polymarket Analytics Platform
+# Polysignal — Polymarket Analytics Platform
 
-> **Live App:** 🚀 [https://polysignal-zp2r4.ondigitalocean.app/](https://polysignal-zp2r4.ondigitalocean.app/)
+> **Live App:** 🚀 [https://evansmakori.github.io/polysignal/](https://evansmakori.github.io/polysignal/)
 
 PolySignal is a real-time analytics and AI-powered trading intelligence platform for [Polymarket](https://polymarket.com) — the world's largest prediction market. It transforms raw market data into actionable insights using machine learning, live data feeds, and a proprietary scoring system.
 
@@ -11,9 +11,9 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 | | |
 |---|---|
 | **Video Demo** | [PolySignal Video Demo] (https://vimeo.com/1175286542?fl=pl&fe=vl) |
-| **Live Platform** | [https://polysignal-zp2r4.ondigitalocean.app/](https://polysignal-zp2r4.ondigitalocean.app/) |
-| **API Docs** | [https://polysignal-zp2r4.ondigitalocean.app/api/docs](https://polysignal-zp2r4.ondigitalocean.app/api/docs) |
-| **API Health Check** | [https://polysignal-zp2r4.ondigitalocean.app/api/health](https://polysignal-zp2r4.ondigitalocean.app/api/health) |
+| **Live Platform** | [https://evansmakori.github.io/polysignal/](https://evansmakori.github.io/polysignal/) |
+| **API Docs** | [https://polysignal-api.onrender.com/docs](https://polysignal-api.onrender.com/docs) |
+| **API Health Check** | [https://polysignal-api.onrender.com/health](https://polysignal-api.onrender.com/health) |
 
 ---
 
@@ -162,8 +162,8 @@ PolySignal/
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/evansmakori/PolySignal-Polymarket-Analytics-Platform.git
-cd PolySignal-Polymarket-Analytics-Platform
+git clone https://github.com/evansmakori/polysignal.git
+cd polysignal
 ```
 
 ### 2. Backend setup

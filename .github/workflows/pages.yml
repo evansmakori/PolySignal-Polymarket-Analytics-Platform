@@ -40,8 +40,8 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_BASE: /PolySignal-Polymarket-Analytics-Platform/
-          VITE_BASE_PATH: /PolySignal-Polymarket-Analytics-Platform
+          VITE_BASE: /polysignal/
+          VITE_BASE_PATH: /polysignal
           VITE_API_BASE_URL: https://polysignal-api.onrender.com
           VITE_WS_URL: wss://polysignal-api.onrender.com
         run: npm run build

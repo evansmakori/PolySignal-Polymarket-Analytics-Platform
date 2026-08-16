@@ -82,7 +82,7 @@ Two code-level notes:
 1. Create an account at <https://render.com> (GitHub login works). **No card
    needed.**
 2. Dashboard → **New** → **Blueprint** → connect
-   `evansmakori/PolySignal-Polymarket-Analytics-Platform`.
+   `evansmakori/polysignal`.
 3. Render reads `render.yaml` (repo root). It will show one service:
    `polysignal-api` on the **Free** plan.
 4. For the **`DATABASE_URL`** prompt, paste the Supabase session-pooler
@@ -117,7 +117,7 @@ push to `main` with no GitHub Actions workflow needed.
 
 1. Create a free account at <https://dash.cloudflare.com/sign-up> (no card).
 2. **Workers & Pages → Create → Pages → Connect to Git** → authorize your
-   GitHub account → select `evansmakori/PolySignal-Polymarket-Analytics-Platform`.
+   GitHub account → select `evansmakori/polysignal`.
 3. Configure the build:
    - **Project name:** `polysignal`
    - **Production branch:** `main`
@@ -175,8 +175,8 @@ template there — pick either option:
 ### Option B — local CLI (you already have a token)
 
 ```bash
-git clone https://github.com/evansmakori/PolySignal-Polymarket-Analytics-Platform.git
-cd PolySignal-Polymarket-Analytics-Platform
+git clone https://github.com/evansmakori/polysignal.git
+cd polysignal
 mkdir -p .github/workflows
 cp docs/workflows/keep-alive.yaml .github/workflows/keep-alive.yaml
 git add .github/workflows/keep-alive.yaml

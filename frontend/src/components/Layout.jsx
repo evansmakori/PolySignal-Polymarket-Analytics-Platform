@@ -30,7 +30,7 @@ function Layout({ children }) {
                 className="h-8 sm:h-10 w-auto object-contain flex-shrink-0"
               />
               <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
-                PolySignal
+                Polysignal
               </h1>
             </Link>
 
@@ -96,7 +96,7 @@ function Layout({ children }) {
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-8 sm:mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            PolySignal — Polymarket Analytics Platform  purposes only • Not financial advice
+            Polysignal — Polymarket Analytics Platform  purposes only • Not financial advice
           </p>
         </div>
       </footer>
