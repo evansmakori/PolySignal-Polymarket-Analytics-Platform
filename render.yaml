@@ -1,0 +1,36 @@
+# Render Blueprint — free-tier backend for PolySignal
+#
+# Creates a single free web service running the FastAPI backend with the
+# native Python runtime (Docker is not available on Render's free tier).
+#
+# Deploy: Render dashboard -> New -> Blueprint -> connect this repo.
+# You will be prompted for DATABASE_URL (the Supabase connection string,
+# see docs/FREE_DEPLOYMENT.md).
+services:
+  - type: web
+    name: polysignal-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --log-level info
+    envVars:
+      # Pin the Python version: Render's current default (3.14.x) has no
+      # wheels for numpy==2.2.1 / pandas==2.2.3 pinned in requirements.txt.
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      # Supabase session-pooler connection string, prompted at Blueprint setup.
+      # Must end with ?sslmode=require  (see docs/FREE_DEPLOYMENT.md).
+      - key: DATABASE_URL
+        sync: false
+      # Run the in-process background jobs (daily lifecycle, score backfill,
+      # active event refresh). The keep-alive workflow keeps the instance
+      # awake so these keep running.
+      - key: ENABLE_BACKGROUND_JOBS
+        value: "true"
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: CORS_ORIGINS
+        value: "*"
