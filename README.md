@@ -260,6 +260,19 @@ Every push to `main` triggers:
 1. **Frontend + App Platform backend** — auto-deployed via `deploy-app.yaml`
 2. **Droplet backend** — auto-deployed via `deploy-droplet.yaml` (SSH + git pull + restart)
 
+## 💸 Free ($0) Deployment
+
+PolySignal can also run **entirely free with no credit card** and without
+sleeping, using Cloudflare Pages (frontend, Git integration) + Render
+(backend) + Supabase (Postgres), kept awake by a scheduled GitHub Action:
+
+- `render.yaml` — Render Blueprint for the FastAPI backend (free plan)
+- `docs/workflows/keep-alive.yaml` — keep-alive template (copy into
+  `.github/workflows/` to activate — pings backend + database every 10 min)
+- `frontend/public/_redirects` — SPA fallback for Cloudflare Pages
+
+Full step-by-step guide: **[docs/FREE_DEPLOYMENT.md](docs/FREE_DEPLOYMENT.md)**
+
 ---
 
 ## 📄 License

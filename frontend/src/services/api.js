@@ -1,9 +1,12 @@
 import axios from 'axios'
 
-// Use relative URL so it works on any domain (production + dev with proxy)
-const API_BASE_URL = import.meta.env.DEV 
+// Dev: use the local Vite proxy (or VITE_API_BASE_URL override).
+// Production: relative (same-origin) by default, but honor VITE_API_BASE_URL
+// when set — needed when the frontend is hosted separately from the API
+// (e.g. Cloudflare/GitHub Pages frontend + Render backend).
+const API_BASE_URL = import.meta.env.DEV
   ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
-  : ''
+  : (import.meta.env.VITE_API_BASE_URL || '')
 
 const api = axios.create({
   baseURL: API_BASE_URL,
