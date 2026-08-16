@@ -1,0 +1,52 @@
+# Keep the $0 stack awake 24/7.
+#
+# Why: Render's free web service spins down after ~15 minutes without inbound
+# traffic, and Supabase pauses free projects after ~7 days without database
+# activity. This workflow pings both every 10 minutes:
+#
+#   1. GET <backend>/health  -> keeps the Render service awake. Its in-process
+#      background jobs (market refresh, score backfill) then keep writing to
+#      Postgres, which keeps Supabase active too.
+#   2. SELECT 1 on Supabase  -> belt-and-braces against the 7-day pause even
+#      if the backend is down.
+#
+# The /health endpoint runs a real `SELECT 1` against Postgres, so a single
+# ping exercises every layer of the stack.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   RENDER_SERVICE_URL    e.g. https://polysignal-api.onrender.com
+#   SUPABASE_DATABASE_URL e.g. postgresql://postgres.abc123:...@aws-0-....pooler.supabase.com:5432/postgres?sslmode=require
+#
+# Note: GitHub disables scheduled workflows if a repo sees no activity for
+# 60 days. Any commit/PR re-enables it. See docs/FREE_DEPLOYMENT.md.
+name: Keep Free Tier Alive
+
+on:
+  schedule:
+    # Every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keep-alive:
+    name: Ping Render + Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend /health (keeps Render awake)
+        continue-on-error: true
+        run: |
+          status=$(curl -s -o /tmp/health.json -w '%{http_code}' \
+            --connect-timeout 30 --max-time 120 \
+            "${{ secrets.RENDER_SERVICE_URL }}/health" || echo "000")
+          echo "Render /health HTTP status: $status"
+          cat /tmp/health.json 2>/dev/null || true
+
+      - name: SELECT 1 on Supabase (prevents 7-day pause)
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq >/dev/null
+          sudo apt-get install -y -qq postgresql-client >/dev/null
+          psql "${{ secrets.SUPABASE_DATABASE_URL }}" -c "SELECT 1 AS keepalive;" || true

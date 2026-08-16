@@ -127,9 +127,15 @@ app.add_middleware(
 app.add_middleware(WebSocketCORSBypassMiddleware)
 
 # Include routers
-app.include_router(markets_router)
+# NOTE: The frontend (src/services/api.js) and the docs call REST endpoints under
+# the /api prefix (e.g. /api/markets, /api/ai). The router objects themselves only
+# declare a relative prefix (/markets, /ai), so we must add the /api prefix here:
+#   markets_router -> /api/markets
+#   ai_router      -> /api/ai
+# The WebSocket router must stay /ws (no /api), matching the frontend WS helpers.
+app.include_router(markets_router, prefix="/api")
 app.include_router(websocket_router)
-app.include_router(ai_router)
+app.include_router(ai_router, prefix="/api")
 
 
 @app.get("/")

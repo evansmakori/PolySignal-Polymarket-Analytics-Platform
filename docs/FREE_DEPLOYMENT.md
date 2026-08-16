@@ -98,8 +98,8 @@ Two code-level notes:
 > **Why Python 3.13.5 is pinned:** Render's current default Python is
 > 3.14.x, which has no prebuilt wheels for `numpy==2.2.1` /
 > `pandas==2.2.3` from `requirements.txt` — the build would fail.
-> `render.yaml` pins `PYTHON_VERSION=3.13.5`, matching what the Dockerfile
-> (3.12-slim) runs.
+> `render.yaml` pins `PYTHON_VERSION=3.13.5` to match the versions that
+> have wheels.
 >
 > **Why not Render's free Postgres?** It is deleted after 30 days. Supabase's
 > free tier is permanent.
@@ -245,15 +245,16 @@ active). Fewer moving parts, but skips the direct Supabase `SELECT 1`.
   self-restarts on the next visit — just takes ~30–50 s. No action needed.
 - **Render policy change**: free-tier terms can change. If the free service
   is discontinued, the fallback is Hugging Face Spaces (free Docker, 2 vCPU /
-  16 GB, sleeps when idle) — same Dockerfile, change one line of config.
+  16 GB, sleeps when idle) — just switch `render.yaml` to a Docker runtime.
 
 ## Undoing / migrating back
 
-The DigitalOcean deployment (`.do/app.yaml` + workflows) is untouched.
-Switching back = re-pointing `VITE_API_BASE_URL`/`VITE_WS_URL` in Cloudflare
-to the DO URL. Render and Supabase can be deleted from their dashboards
-anytime — the only data to migrate is Postgres (pg_dump / pg_restore both
-ways).
+The prior DigitalOcean deployment (`.do/app.yaml` + App Platform/Droplet
+workflows) was removed from this repo when we moved to the free stack. If you
+ever want to switch back, restore `.do/app.yaml` and the deploy workflows from
+git history and re-point `VITE_API_BASE_URL`/`VITE_WS_URL` in Cloudflare to
+the DO URL. Render and Supabase can be deleted from their dashboards anytime —
+the only data to migrate is Postgres (pg_dump / pg_restore both ways).
 
 ## Costs
 

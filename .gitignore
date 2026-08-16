@@ -56,7 +56,3 @@ Thumbs.db
 # Logs
 *.log
 /tmp/
-
-# DigitalOcean
-.do/app.yaml.bak
-.do/app.yaml

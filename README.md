@@ -64,17 +64,14 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 | aiofiles | Async file I/O |
 | python-dotenv | Environment config |
 
-### Infrastructure & Cloud
+### Infrastructure & Cloud (free deployment)
 | Service | Purpose |
 |---|---|
-| DigitalOcean App Platform | Hosting frontend + App Platform backend |
-| DigitalOcean Droplet (2vCPU/2GB, nyc1) | Primary backend with WebSocket support |
-| DigitalOcean Load Balancer | Traffic routing + health checks to Droplet |
-| DigitalOcean Managed PostgreSQL | Cloud database (nyc1 region, SSL enforced) |
-| DigitalOcean GPU Droplets | ML model training (H100/A100 via Gradient™ AI) |
-| Docker | Containerization |
-| Nginx | Frontend static file serving & WebSocket reverse proxy |
-| GitHub Actions | CI/CD pipeline — auto-deploy on push to both App Platform and Droplet |
+| Cloudflare Pages | Hosts the React frontend (SPA fallback via Functions `_middleware.js`) |
+| Render (free web service) | Hosts the FastAPI backend (`render.yaml` Blueprint, Python 3.13.5) |
+| Supabase (PostgreSQL) | Managed Postgres database (session pooler on port 5432, `sslmode=require`) |
+| GitHub Actions | Keep-alive cron — pings the backend + DB every 10 min so free tiers don't sleep |
+| GitHub Actions | Optional CI — build the frontend on push (Cloudflare Git integration) |
 
 ### External APIs
 | API | Purpose |
@@ -90,31 +87,24 @@ PolySignal is a real-time analytics and AI-powered trading intelligence platform
 Users
   │
   ▼
-DigitalOcean App Platform
-  https://polysignal-zp2r4.ondigitalocean.app
-  └── React + Nginx (frontend)
-  └── FastAPI backend (API, no background jobs)
-          │
-          │ WebSocket + API calls
-          ▼
-DigitalOcean Load Balancer (138.197.231.111)
-  └── Health checks, traffic routing
-          │
-          ▼
-DigitalOcean Droplet (nyc1, 2vCPU/2GB)
-  └── Nginx (WebSocket reverse proxy)
-      └── FastAPI + Uvicorn
-          └── Background jobs (auto-sync, backfill, lifecycle)
-                  │
-                  ▼
-DigitalOcean Managed PostgreSQL (nyc1)
-  └── 346,000+ market snapshots
+Cloudflare Pages  (https://<project>.pages.dev)
+  https://polysignal.pages.dev
+  ├── /api/*  ─┐  VITE_API_BASE_URL (baked at build time)
+  ├── /ws/*    ─┼─►  Render free web service  (https://polysignal-api.onrender.com)
+  ▼             │   └── FastAPI + Uvicorn + in-process background jobs
+                │           │  asyncpg (?sslmode=require)
+                ▼           ▼
+           Supabase Postgres (session pooler, port 5432)
+                │
+Keep-alive (every 10 min, GitHub Actions cron):
+   GET <backend>/health → keeps Render awake → its background jobs keep Supabase active
 ```
 
 ### CI/CD Pipeline
 Every push to `main` triggers:
-1. **GitHub Actions: Deploy Backend to Droplet** — SSH pull, pip install, restart FastAPI
-2. **GitHub Actions: Update App** — DigitalOcean App Platform frontend + backend rebuild
+1. **Cloudflare Pages** — Git integration rebuilds and publishes the frontend
+2. **Render** — autoDeploy rebuilds and redeploys the backend from `render.yaml`
+3. **GitHub Actions: Keep Free Tier Alive** — cron keeps the free stack awake
 
 ---
 
@@ -125,9 +115,9 @@ PolySignal/
 ├── backend/
 │   ├── app/
 │   │   ├── api/              # REST API & WebSocket route handlers
-│   │   │   ├── markets.py    # Market endpoints
-│   │   │   ├── ai.py         # AI/ML endpoints
-│   │   │   └── websocket.py  # WebSocket endpoints
+│   │   │   ├── markets.py    # /api/markets endpoints
+│   │   │   ├── ai.py         # /api/ai endpoints
+│   │   │   └── websocket.py  # /ws endpoints
 │   │   ├── core/             # Core business logic
 │   │   │   ├── scoring.py    # Unified Risk Score engine
 │   │   │   ├── polymarket.py # Polymarket API client
@@ -143,24 +133,22 @@ PolySignal/
 │   │   │   ├── anomaly_detector.py   # Anomaly detection
 │   │   │   └── trading_agent.py      # Trading signal generator
 │   │   ├── models/           # Pydantic data models
-│   │   └── main.py           # FastAPI app entry point
+│   │   └── main.py           # FastAPI app entry point (/api + /ws routing)
 │   ├── requirements.txt
-│   ├── Dockerfile
 │   └── run.py
 ├── frontend/
+│   ├── functions/_middleware.js  # SPA fallback for Cloudflare Pages
 │   ├── src/
 │   │   ├── components/       # Reusable UI components
 │   │   ├── pages/            # Page-level components
-│   │   ├── services/api.js   # API client
+│   │   ├── services/api.js   # API client (honors VITE_API_BASE_URL / VITE_WS_URL)
 │   │   └── App.jsx
-│   ├── Dockerfile
-│   ├── nginx.conf
 │   └── package.json
-├── .do/app.yaml              # DigitalOcean App Platform spec
-├── scripts/                  # Helper shell scripts
-└── .github/workflows/        # GitHub Actions CI/CD
-    ├── deploy-app.yaml       # App Platform auto-deploy
-    └── deploy-droplet.yaml   # Droplet backend auto-deploy
+├── render.yaml               # Render Blueprint: free FastAPI backend (Python 3.13.5)
+├── docs/FREE_DEPLOYMENT.md   # Step-by-step $0 deploy: Cloudflare + Render + Supabase
+├── scripts/                  # Local helper shell scripts
+└── .github/workflows/        # GitHub Actions
+    └── keep-alive.yaml       # Keeps the free Render + Supabase stack awake
 ```
 
 ---
@@ -257,8 +245,9 @@ Scores range **0–100**:
 ## 🔄 CI/CD
 
 Every push to `main` triggers:
-1. **Frontend + App Platform backend** — auto-deployed via `deploy-app.yaml`
-2. **Droplet backend** — auto-deployed via `deploy-droplet.yaml` (SSH + git pull + restart)
+1. **Cloudflare Pages** — rebuilds & publishes the React frontend (Git integration)
+2. **Render** — autoDeploy rebuilds the FastAPI backend via `render.yaml`
+3. **GitHub Actions: Keep Free Tier Alive** — cron keeps the free stack awake
 
 ## 💸 Free ($0) Deployment
 
@@ -267,9 +256,10 @@ sleeping, using Cloudflare Pages (frontend, Git integration) + Render
 (backend) + Supabase (Postgres), kept awake by a scheduled GitHub Action:
 
 - `render.yaml` — Render Blueprint for the FastAPI backend (free plan)
-- `docs/workflows/keep-alive.yaml` — keep-alive template (copy into
-  `.github/workflows/` to activate — pings backend + database every 10 min)
-- `frontend/public/_redirects` — SPA fallback for Cloudflare Pages
+- `.github/workflows/keep-alive.yaml` — active keep-alive workflow (pings backend +
+  database every 10 min so the free tiers don't sleep). The template is in
+  `docs/workflows/keep-alive.yaml`.
+- `frontend/functions/_middleware.js` — SPA fallback for Cloudflare Pages
 
 Full step-by-step guide: **[docs/FREE_DEPLOYMENT.md](docs/FREE_DEPLOYMENT.md)**
 
@@ -281,10 +271,10 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🙌 Built With ❤️ on DigitalOcean
+## 🙌 Built With ❤️ on the Free Stack
 
 PolySignal is proudly deployed on:
-- [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform/)
-- [DigitalOcean Managed PostgreSQL](https://www.digitalocean.com/products/managed-databases-postgresql/)
-- [DigitalOcean Droplets](https://www.digitalocean.com/products/droplets/) with Load Balancer
-- [DigitalOcean Gradient™ AI](https://www.digitalocean.com/products/gradient) GPU infrastructure for ML training
+- [Cloudflare Pages](https://pages.cloudflare.com/) — frontend (React), free tier
+- [Render](https://render.com/) — FastAPI backend (free web service via `render.yaml`)
+- [Supabase](https://supabase.com/) — managed Postgres database (free tier)
+- [GitHub Actions](https://github.com/features/actions) — keep-alive cron
