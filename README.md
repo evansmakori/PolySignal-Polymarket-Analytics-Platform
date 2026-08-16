@@ -281,3 +281,5 @@ Polysignal is proudly deployed on:
 - [Render](https://render.com/) — FastAPI backend (free web service via `render.yaml`)
 - [Supabase](https://supabase.com/) — managed Postgres database (free tier)
 - [GitHub Actions](https://github.com/features/actions) — keep-alive cron
+
+*Analytics sidebar with bet calculator v2 - August 2026*
